@@ -9,7 +9,9 @@ import ForgotPasswordPage from "./src/app/(auth)/forgot-password/page";
 import ResetPasswordPage from "./src/app/(auth)/reset-password/page";
 import RemoteScreen from "./src/app/remote/RemoteScreen";
 
-const Stack = createNativeStackNavigator();
+import { RootStackParamList } from "./src/types/navigation";
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (

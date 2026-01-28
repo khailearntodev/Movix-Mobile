@@ -4,13 +4,15 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { Eye, EyeOff } from "lucide-react-native";
 import { API_URL } from "../../../constants/config";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../../types/navigation";
 
 type ResetPasswordRouteParams = {
     token?: string;
 };
 
 export default function ResetPasswordPage() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const route = useRoute();
     const params = route.params as ResetPasswordRouteParams | undefined;
     const token = params?.token;
@@ -57,7 +59,7 @@ export default function ResetPasswordPage() {
 
             if (response.ok) {
                 Alert.alert("Thành công", "Đặt lại mật khẩu thành công!", [
-                    { text: "OK", onPress: () => navigation.navigate("Login" as never) }
+                    { text: "OK", onPress: () => navigation.navigate("Login") }
                 ]);
             } else {
                 Alert.alert("Lỗi", data.message || "Đã xảy ra lỗi.");
@@ -96,7 +98,7 @@ export default function ResetPasswordPage() {
                             <Text className="text-3xl font-bold text-white mb-2">Đặt lại mật khẩu</Text>
                             <View className="flex-row">
                                 <Text className="text-zinc-400 text-base">Bạn đã có tài khoản? </Text>
-                                <TouchableOpacity onPress={() => navigation.navigate("Login" as never)}>
+                                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
                                     <Text className="text-red-500 text-base font-semibold">Đăng nhập ngay</Text>
                                 </TouchableOpacity>
                             </View>
