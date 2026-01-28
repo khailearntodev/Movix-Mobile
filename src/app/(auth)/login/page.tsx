@@ -4,8 +4,11 @@ import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { Eye, EyeOff } from "lucide-react-native";
 
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../../types/navigation";
+
 export default function LoginPage() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +59,7 @@ export default function LoginPage() {
                             <Text className="text-3xl font-bold text-white mb-2">Đăng nhập</Text>
                             <View className="flex-row">
                                 <Text className="text-zinc-400 text-base">Bạn chưa có tài khoản? </Text>
-                                <TouchableOpacity onPress={() => navigation.navigate("Register" as never)}>
+                                <TouchableOpacity onPress={() => navigation.navigate("Register")}>
                                     <Text className="text-red-500 text-base font-semibold">Đăng ký ngay</Text>
                                 </TouchableOpacity>
                             </View>
@@ -111,7 +114,7 @@ export default function LoginPage() {
                                 </Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword" as never)} className="items-center mt-4">
+                            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")} className="items-center mt-4">
                                 <Text className="text-zinc-400 text-sm">Quên mật khẩu?</Text>
                             </TouchableOpacity>
                         </View>

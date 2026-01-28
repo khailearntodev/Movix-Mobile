@@ -4,8 +4,11 @@ import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { Eye, EyeOff } from "lucide-react-native";
 
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../../types/navigation";
+
 export default function RegisterPage() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -74,7 +77,7 @@ export default function RegisterPage() {
                             <Text className="text-3xl font-bold text-white mb-2">Đăng ký</Text>
                             <View className="flex-row">
                                 <Text className="text-zinc-400 text-base">Bạn đã có tài khoản? </Text>
-                                <TouchableOpacity onPress={() => navigation.navigate("Login" as never)}>
+                                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
                                     <Text className="text-red-500 text-base font-semibold">Đăng nhập ngay</Text>
                                 </TouchableOpacity>
                             </View>

@@ -5,8 +5,11 @@ import { StatusBar } from "expo-status-bar";
 import ResetPasswordModal from "../../../components/auth/ResetPasswordModal";
 import { API_URL } from "../../../constants/config";
 
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../../types/navigation";
+
 export default function ForgotPasswordPage() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,7 +73,7 @@ export default function ForgotPasswordPage() {
                             <Text className="text-3xl font-bold text-white mb-2">Quên mật khẩu</Text>
                             <View className="flex-row">
                                 <Text className="text-zinc-400 text-base">Bạn đã có tài khoản? </Text>
-                                <TouchableOpacity onPress={() => navigation.navigate("Login" as never)}>
+                                <TouchableOpacity onPress={() => navigation.navigate("Login")}>
                                     <Text className="text-red-500 text-base font-semibold">Đăng nhập ngay</Text>
                                 </TouchableOpacity>
                             </View>
