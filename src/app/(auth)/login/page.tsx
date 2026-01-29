@@ -23,7 +23,7 @@ export default function LoginPage() {
         try {
             setIsLoading(true);
             Alert.alert("Thông báo", "Đăng nhập thành công (Simulation)");
-            navigation.navigate("Remote");
+            navigation.navigate("Main");
         } catch (error) {
             Alert.alert("Lỗi", "Đăng nhập thất bại.");
         } finally {

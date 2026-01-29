@@ -1,7 +1,11 @@
+import { Movie } from "./movie";
+
 export type RootStackParamList = {
-    Login: undefined;
-    Register: undefined;
-    ForgotPassword: undefined;
-    ResetPassword: { token: string } | undefined;
-    Remote: undefined;
+  Login: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
+  Main: undefined; 
+  MovieDetail: { movie: Movie }; 
+  Remote: undefined; 
 };
