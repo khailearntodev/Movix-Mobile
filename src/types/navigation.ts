@@ -5,4 +5,6 @@ export type RootStackParamList = {
     ForgotPassword: undefined;
     ResetPassword: { token: string } | undefined;
     Remote: undefined;
+    Filter: undefined;
+    Search: { appliedFilters?: any } | undefined;
 };

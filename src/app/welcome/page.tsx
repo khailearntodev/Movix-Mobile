@@ -44,6 +44,13 @@ export default function WelcomePage() {
                     >
                         <Text className="text-white text-lg font-bold uppercase tracking-wider">Đăng ký</Text>
                     </TouchableOpacity>
+
+                    <TouchableOpacity
+                        className="active:bg-white/10 rounded-xl py-3 w-full items-center mt-2"
+                        onPress={() => navigation.navigate("Search")}
+                    >
+                        <Text className="text-zinc-400 text-sm">Tìm kiếm (Test Mode)</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </ImageBackground>

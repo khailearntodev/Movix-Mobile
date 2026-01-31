@@ -10,6 +10,9 @@ import ResetPasswordPage from "./src/app/(auth)/reset-password/page";
 import RemoteScreen from "./src/app/remote/RemoteScreen";
 import WelcomePage from "./src/app/welcome/page";
 
+import FilterPage from "./src/app/search/filter";
+import SearchPage from "./src/app/search/page";
+
 import { RootStackParamList } from "./src/types/navigation";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -24,6 +27,12 @@ export default function App() {
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
         <Stack.Screen name="Remote" component={RemoteScreen} />
+        <Stack.Screen name="Search" component={SearchPage} />
+        <Stack.Screen
+          name="Filter"
+          component={FilterPage}
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
       </Stack.Navigator>
       <StatusBar style="light" />
     </NavigationContainer>
