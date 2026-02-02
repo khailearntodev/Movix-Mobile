@@ -15,7 +15,7 @@
     "axios": "^1.13.3",
     "babel-preset-expo": "~54.0.10",
     "clsx": "^2.1.1",
-    "expo": "~54.0.32",
+    "expo": "~54.0.33",
     "expo-status-bar": "~3.0.9",
     "lucide-react-native": "^0.563.0",
     "nativewind": "^4.2.1",
