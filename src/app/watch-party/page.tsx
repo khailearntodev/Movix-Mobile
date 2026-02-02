@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, ImageBackground, StatusBar, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Plus, Play } from 'lucide-react-native';
+import { PartyRoom } from '@/types/watch-party';
 import { PartyCard } from '@/components/watch-party/PartyCard';
 import CreatePartyModal from '@/components/watch-party/CreatePartyModal';
 
-const MOCK_ROOMS = [
+// Mock Data
+const MOCK_ROOMS: PartyRoom[] = [
     { id: '1', title: 'Cày phim đêm khuya 🍿', movieTitle: 'Interstellar', image: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', status: 'live', viewers: 128, host: 'Alice Nguyen', isPrivate: false },
     { id: '2', title: 'Marvel Marathon', movieTitle: 'Avengers: Endgame', image: 'https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg', status: 'scheduled', scheduledAt: '2024-02-10T20:00:00Z', host: 'Bob Smith', isPrivate: true },
     { id: '3', title: 'Xem lại Arcane', movieTitle: 'Arcane: Season 2', image: 'https://image.tmdb.org/t/p/w500/fqldf2t8ztc9aiwn3k6mlX3tvRT.jpg', status: 'ended', host: 'Charlie', isPrivate: false },
