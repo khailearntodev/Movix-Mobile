@@ -7,4 +7,5 @@ export type RootStackParamList = {
     Remote: undefined;
     Filter: undefined;
     Search: { appliedFilters?: any } | undefined;
+    WatchParty: undefined;
 };

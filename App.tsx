@@ -12,6 +12,7 @@ import WelcomePage from "./src/app/welcome/page";
 
 import FilterPage from "./src/app/search/filter";
 import SearchPage from "./src/app/search/page";
+import WatchPartyScreen from "./src/app/watch-party/page";
 
 import { RootStackParamList } from "./src/types/navigation";
 
@@ -28,6 +29,7 @@ export default function App() {
         <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
         <Stack.Screen name="Remote" component={RemoteScreen} />
         <Stack.Screen name="Search" component={SearchPage} />
+        <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
         <Stack.Screen
           name="Filter"
           component={FilterPage}
