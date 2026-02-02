@@ -1,17 +1,21 @@
 // src/app/home/HomeScreen.tsx
 import React from "react";
-import { View, Text, ScrollView, SafeAreaView, StatusBar, Image } from "react-native";
+import { View, Text, ScrollView, SafeAreaView, StatusBar, Image, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types/navigation";
 import { MovieCard } from "../../components/movie/MovieCard";
 import { Movie } from "../../types/movie";
+import HeroBanner from "../../components/home/HeroBanner";
+import GenreList from "../../components/home/GenreList";
+import { Search } from "lucide-react-native";
 
-// Mock Data (Dữ liệu giả lập để test UI)
 const MOCK_MOVIES: Movie[] = [
-    { id: 1, title: "Dune: Part Two", poster_path: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg", backdrop_path: "", vote_average: 8.5, release_date: "2024-02-27", overview: "Follow the mythic journey of Paul Atreides..." },
-    { id: 2, title: "Kung Fu Panda 4", poster_path: "https://image.tmdb.org/t/p/w500/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg", backdrop_path: "", vote_average: 7.8, release_date: "2024-03-02", overview: "Po is gearing up to become the Spiritual Leader..." },
-    { id: 3, title: "Godzilla x Kong", poster_path: "https://image.tmdb.org/t/p/w500/tM26baWgQO785S1iZM32kJ9uJ7q.jpg", backdrop_path: "", vote_average: 7.2, release_date: "2024-03-27", overview: "The new installment in the Monsterverse..." },
+  { id: 1, title: "Dune: Part Two", poster_path: "/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg", backdrop_path: "", vote_average: 8.5, release_date: "2024-02-27", overview: "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.", media_type: "movie" },
+  { id: 2, title: "Kung Fu Panda 4", poster_path: "/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg", backdrop_path: "", vote_average: 7.8, release_date: "2024-03-02", overview: "Po is gearing up to become the Spiritual Leader of his Valley of Peace, but also needs someone to take his place as Dragon Warrior.", media_type: "movie" },
+  { id: 3, title: "Godzilla x Kong: The New Empire", poster_path: "/tM26baWgQO785S1iZM32kJ9uJ7q.jpg", backdrop_path: "", vote_average: 7.2, release_date: "2024-03-27", overview: "Following their explosive showdown, Godzilla and Kong must reunite against a colossal undiscovered threat hidden within our world.", media_type: "movie" },
+  { id: 4, title: "Civil War", poster_path: "/sh7Rg8Er3tFcN9AdeGSJDXZ7lnf.jpg", backdrop_path: "", vote_average: 7.5, release_date: "2024-04-12", overview: "A journey across a dystopian future America, following a team of military-embedded journalists as they race against time to reach DC before rebel factions descend upon the White House.", media_type: "movie" },
+  { id: 5, title: "The Fall Guy", poster_path: "/tSz1qsmSJon0rqjHBxXZmrotuse.jpg", backdrop_path: "", vote_average: 7.3, release_date: "2024-05-03", overview: "He's a stuntman, and like everyone in the stunt community, he gets blown up, shot, crashed, thrown through windows and dropped from the highest of heights, all for our entertainment.", media_type: "movie" },
 ];
 
 export default function HomeScreen() {
@@ -34,34 +38,38 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <SafeAreaView className="flex-1">
+
         {/* Header */}
-        <View className="px-4 py-4 flex-row justify-between items-center">
-            <View>
-                <Text className="text-red-600 text-2xl font-black tracking-wider">MOVIX</Text>
-            </View>
-            <View className="w-10 h-10 bg-zinc-800 rounded-full border border-zinc-700" /> 
+        <View className="px-4 py-2 flex-row justify-between items-center bg-black/80 z-50">
+          <View className="flex-row items-center gap-2">
+            <Image
+              source={require('../../../assets/images/logo.png')}
+              className="w-10 h-10"
+              resizeMode="contain"
+            />
+            <Text className="text-red-500 text-2xl font-black tracking-wider">MOVIX</Text>
+          </View>
+          <TouchableOpacity className="w-10 h-10 bg-zinc-900 rounded-full items-center justify-center border border-zinc-800">
+            <Search size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
 
-        <ScrollView className="flex-1 mt-2">
-          {/* Featured Banner (Optional) */}
-          <View className="w-full h-48 mb-6 mx-4 w-[92%] rounded-2xl bg-zinc-900 overflow-hidden relative justify-end p-4 border border-zinc-800">
-             <Image 
-                source={{ uri: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg" }} 
-                className="absolute inset-0 opacity-60" 
-                resizeMode="cover" 
-             />
-             <View className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
-             <Text className="text-white text-xl font-bold z-10">Dune: Part Two</Text>
-             <Text className="text-zinc-300 text-xs z-10">Action • Sci-Fi • Adventure</Text>
-          </View>
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
 
+          {/* Hero Banner (Featured Movies) */}
+          <HeroBanner movies={MOCK_MOVIES.slice(0, 5)} onPress={handleMoviePress} />
+
+          {/* Genre List */}
+          <GenreList onGenrePress={(id) => console.log('Genre pressed:', id)} />
+
+          {/* Movie Sections */}
           {renderSection("Đang thịnh hành", MOCK_MOVIES)}
           {renderSection("Phim chiếu rạp", MOCK_MOVIES)}
           {renderSection("Đánh giá cao", MOCK_MOVIES)}
-          
-          <View className="h-20" /> 
+          {renderSection("Dành riêng cho bạn", MOCK_MOVIES.slice(2, 5))}
+
         </ScrollView>
       </SafeAreaView>
     </View>
