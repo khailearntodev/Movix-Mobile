@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Check, Crown } from 'lucide-react-native';
 
 const SubscriptionScreen = () => {
-    const currentPlan = 'free';
+    const currentPlan: string = 'free';
 
     return (
         <ScrollView className="flex-1 bg-zinc-950 p-4 pt-8">

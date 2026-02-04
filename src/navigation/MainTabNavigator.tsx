@@ -1,14 +1,18 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Gamepad2, User, Bell } from 'lucide-react-native';
+import { Home, Gamepad2, User } from 'lucide-react-native';
 import HomeScreen from '../app/home/HomeScreen';
 import RemoteScreen from '../app/remote/RemoteScreen';
-// import AccountScreen from '../app/account/AccountScreen';
-import NotificationsScreen from '../app/account/NotificationsScreen';
-import ProfileStackNavigator from './ProfileStackNavigator';
-import { Platform } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 
 const Tab = createBottomTabNavigator();
+
+// Placeholder Profile Screen
+const ProfileScreen = () => (
+    <View className="flex-1 bg-black justify-center items-center">
+        <Text className="text-white text-xl">Profile Screen</Text>
+    </View>
+);
 
 export default function MainTabNavigator() {
   return (
@@ -27,36 +31,28 @@ export default function MainTabNavigator() {
         tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
       }}
     >
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeScreen}
+      <Tab.Screen 
+        name="HomeTab" 
+        component={HomeScreen} 
         options={{
-          tabBarLabel: 'Trang chủ',
-          tabBarIcon: ({ color }) => <Home color={color} size={24} />
+            tabBarLabel: 'Trang chủ',
+            tabBarIcon: ({ color }) => <Home color={color} size={24} />
         }}
       />
-      <Tab.Screen
-        name="RemoteTab"
-        component={RemoteScreen}
+      <Tab.Screen 
+        name="RemoteTab" 
+        component={RemoteScreen} 
         options={{
-          tabBarLabel: 'Điều khiển',
-          tabBarIcon: ({ color }) => <Gamepad2 color={color} size={24} />
+            tabBarLabel: 'Điều khiển',
+            tabBarIcon: ({ color }) => <Gamepad2 color={color} size={24} />
         }}
       />
-      <Tab.Screen
-        name="NotificationsTab"
-        component={NotificationsScreen}
+      <Tab.Screen 
+        name="ProfileTab" 
+        component={ProfileScreen} 
         options={{
-          tabBarLabel: 'Thông báo',
-          tabBarIcon: ({ color }) => <Bell color={color} size={24} />
-        }}
-      />
-      <Tab.Screen
-        name="ProfileTab"
-        component={ProfileStackNavigator}
-        options={{
-          tabBarLabel: 'Cá nhân',
-          tabBarIcon: ({ color }) => <User color={color} size={24} />
+            tabBarLabel: 'Cá nhân',
+            tabBarIcon: ({ color }) => <User color={color} size={24} />
         }}
       />
     </Tab.Navigator>
