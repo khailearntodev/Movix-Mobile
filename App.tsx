@@ -13,7 +13,8 @@ import WelcomePage from "./src/app/welcome/page";
 import FilterPage from "./src/app/search/filter";
 import SearchPage from "./src/app/search/page";
 import WatchPartyScreen from "./src/app/watch-party/page";
-
+import MainTabNavigator from "./src/navigation/MainTabNavigator";
+import MovieDetailScreen from "./src/app/movie/MovieDetailScreen";
 import { RootStackParamList } from "./src/types/navigation";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -23,10 +24,15 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Welcome" component={WelcomePage} />
+        {/* Auth Group */}
         <Stack.Screen name="Login" component={LoginPage} />
         <Stack.Screen name="Register" component={RegisterPage} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
+
+        {/* Main App Group */}
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
         <Stack.Screen name="Remote" component={RemoteScreen} />
         <Stack.Screen name="Search" component={SearchPage} />
         <Stack.Screen name="WatchParty" component={WatchPartyScreen} />

@@ -1,10 +1,14 @@
+import { Movie } from "./movie";
+
 export type RootStackParamList = {
-    Login: undefined;
+  Login: undefined;
     Welcome: undefined;
-    Register: undefined;
-    ForgotPassword: undefined;
-    ResetPassword: { token: string } | undefined;
-    Remote: undefined;
+  Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
+  Main: undefined; 
+  MovieDetail: { movie: Movie }; 
+  Remote: undefined; 
     Filter: undefined;
     Search: { appliedFilters?: any } | undefined;
     WatchParty: undefined;
