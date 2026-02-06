@@ -12,4 +12,10 @@ export type RootStackParamList = {
     Filter: undefined;
     Search: { appliedFilters?: any } | undefined;
     WatchParty: undefined;
+    Playlist: undefined;
+    Favorites: undefined;
+    History: undefined;
+    EditProfile: undefined;
+    Notifications: undefined;
+    Subscription: undefined;
 };

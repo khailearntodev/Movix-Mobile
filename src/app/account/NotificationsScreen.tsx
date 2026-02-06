@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { Bell, Film, MessageSquare, Users, AlertTriangle, ChevronLeft } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 type NotificationType = 'NEW_MOVIE' | 'COMMENT_REPLY' | 'WATCH_PARTY_INVITE' | 'SYSTEM';
 
@@ -92,6 +92,8 @@ const formatTimeAgo = (dateString: string) => {
 
 const NotificationsScreen = () => {
     const navigation = useNavigation();
+    const route = useRoute<any>();
+    const isTab = route.params?.isTab;
 
     const renderItem = ({ item }: { item: Notification }) => (
         <TouchableOpacity
@@ -124,9 +126,18 @@ const NotificationsScreen = () => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ paddingBottom: 20 }}
-                ListHeaderComponent={() => (
-                    <View className="flex-row items-center justify-between px-4 pb-4 border-b border-zinc-900 bg-black">
-                        <Text className="text-white text-2xl font-bold">Thông báo</Text>
+                ListHead{!isTab ? (
+                            <TouchableOpacity onPress={() => navigation.goBack()} className="flex-row items-center gap-4">
+                                <ChevronLeft size={28} color="white" />
+                                <Text className="text-white text-2xl font-bold">Thông báo</Text>
+                            </TouchableOpacity>
+                        ) : (
+                            <View className="flex-row items-center gap-4">
+                                <Text className="text-white text-2xl font-bold">Thông báo</Text>
+                            </View>
+                        )}ze={28} color="white" />
+                            <Text className="text-white text-2xl font-bold">Thông báo</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity>
                             <Text className="text-red-500 font-medium">Đánh dấu đã đọc</Text>
                         </TouchableOpacity>
