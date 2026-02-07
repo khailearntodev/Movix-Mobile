@@ -35,7 +35,7 @@ const AccountScreen = () => {
             <View className="px-4 mb-6 flex-row items-center justify-between">
                 <Text className="text-white text-2xl font-bold">Cá nhân</Text>
                 <View className="flex-row gap-4">
-                    <TouchableOpacity><Search size={24} color="white" /></TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigation.navigate("Search")}><Search size={24} color="white" /></TouchableOpacity>
                     <TouchableOpacity><Menu size={24} color="white" /></TouchableOpacity>
                 </View>
             </View>

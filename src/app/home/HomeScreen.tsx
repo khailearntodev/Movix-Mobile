@@ -51,7 +51,10 @@ export default function HomeScreen() {
             />
             <Text className="text-red-500 text-2xl font-black tracking-wider">MOVIX</Text>
           </View>
-          <TouchableOpacity className="w-10 h-10 bg-zinc-900 rounded-full items-center justify-center border border-zinc-800">
+          <TouchableOpacity 
+            className="w-10 h-10 bg-zinc-900 rounded-full items-center justify-center border border-zinc-800"
+            onPress={() => navigation.navigate("Search")}
+          >
             <Search size={20} color="#fff" />
           </TouchableOpacity>
         </View>

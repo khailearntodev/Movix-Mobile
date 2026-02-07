@@ -1,18 +1,27 @@
 import React from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { ChevronLeft } from 'lucide-react-native';
 
 const HistoryScreen = () => {
+    const navigation = useNavigation();
     const history = [
         { id: '1', title: 'Phim Đã Xem A', cover: 'https://via.placeholder.com/150', progress: '45m left' },
     ];
 
     return (
-        <View className="flex-1 bg-zinc-950 p-4 pt-12">
-            <Text className="text-white text-2xl font-bold mb-6">Xem tiếp</Text>
+        <View className="flex-1 bg-zinc-950 pt-12">
+            <View className="px-4 pb-4">
+                <TouchableOpacity onPress={() => navigation.goBack()} className="flex-row items-center gap-4">
+                    <ChevronLeft size={28} color="white" />
+                    <Text className="text-white text-2xl font-bold">Xem tiếp</Text>
+                </TouchableOpacity>
+            </View>
             {history.length > 0 ? (
                 <FlatList
                     data={history}
                     keyExtractor={item => item.id}
+                    contentContainerStyle={{ paddingHorizontal: 16 }}
                     renderItem={({ item }) => (
                         <TouchableOpacity className="flex-row mb-4 bg-zinc-900 rounded-lg overflow-hidden">
                             <Image

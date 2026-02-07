@@ -1,8 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Gamepad2, User } from 'lucide-react-native';
+import { Home, Gamepad2, User, Bell } from 'lucide-react-native';
 import HomeScreen from '../app/home/HomeScreen';
 import RemoteScreen from '../app/remote/RemoteScreen';
+import AccountScreen from '@/app/account/AccountScreen';
+import NotificationsScreen from '@/app/account/NotificationsScreen';
 import { View, Text, Platform } from 'react-native';
 
 const Tab = createBottomTabNavigator();
@@ -48,8 +50,17 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen 
+        name="NotificationsTab" 
+        component={NotificationsScreen} 
+        initialParams={{ isTab: true }}
+        options={{
+            tabBarLabel: 'Thông báo',
+            tabBarIcon: ({ color }) => <Bell color={color} size={24} />
+        }}
+      />
+      <Tab.Screen 
         name="ProfileTab" 
-        component={ProfileScreen} 
+        component={AccountScreen} 
         options={{
             tabBarLabel: 'Cá nhân',
             tabBarIcon: ({ color }) => <User color={color} size={24} />
