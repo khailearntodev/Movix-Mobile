@@ -126,7 +126,9 @@ const NotificationsScreen = () => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ paddingBottom: 20 }}
-                ListHead{!isTab ? (
+                ListHeaderComponent={
+                    <View className="flex-row justify-between items-center px-4 py-4 border-b border-zinc-900 bg-black">
+                        {!isTab ? (
                             <TouchableOpacity onPress={() => navigation.goBack()} className="flex-row items-center gap-4">
                                 <ChevronLeft size={28} color="white" />
                                 <Text className="text-white text-2xl font-bold">Thông báo</Text>
@@ -135,14 +137,12 @@ const NotificationsScreen = () => {
                             <View className="flex-row items-center gap-4">
                                 <Text className="text-white text-2xl font-bold">Thông báo</Text>
                             </View>
-                        )}ze={28} color="white" />
-                            <Text className="text-white text-2xl font-bold">Thông báo</Text>
-                        </TouchableOpacity>
+                        )}
                         <TouchableOpacity>
                             <Text className="text-red-500 font-medium">Đánh dấu đã đọc</Text>
                         </TouchableOpacity>
                     </View>
-                )}
+                }
                 stickyHeaderIndices={[0]}
             />
         </View>
