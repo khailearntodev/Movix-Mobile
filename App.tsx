@@ -23,6 +23,8 @@ import NotificationsScreen from "./src/app/account/NotificationsScreen";
 import SubscriptionScreen from "./src/app/account/SubscriptionScreen";
 import { RootStackParamList } from "./src/types/navigation";
 
+import WatchMovieScreen from "./src/app/movie/WatchMovieScreen";
+
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
@@ -39,10 +41,11 @@ export default function App() {
         {/* Main App Group */}
         <Stack.Screen name="Main" component={MainTabNavigator} />
         <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
+        <Stack.Screen name="WatchMovie" component={WatchMovieScreen} />
         <Stack.Screen name="Remote" component={RemoteScreen} />
         <Stack.Screen name="Search" component={SearchPage} />
         <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
-        
+
         {/* Account Group */}
         <Stack.Screen name="Playlist" component={PlaylistScreen} />
         <Stack.Screen name="Favorites" component={FavoritesScreen} />
