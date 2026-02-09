@@ -14,8 +14,17 @@ import FilterPage from "./src/app/search/filter";
 import SearchPage from "./src/app/search/page";
 import WatchPartyScreen from "./src/app/watch-party/page";
 import WatchPartyRoom from "./src/app/watch-party/WatchPartyRoom";
-
+import MainTabNavigator from "./src/navigation/MainTabNavigator";
+import MovieDetailScreen from "./src/app/movie/MovieDetailScreen";
+import PlaylistScreen from "./src/app/account/PlaylistScreen";
+import FavoritesScreen from "./src/app/account/FavoritesScreen";
+import HistoryScreen from "./src/app/account/HistoryScreen";
+import EditProfileScreen from "./src/app/account/EditProfileScreen";
+import NotificationsScreen from "./src/app/account/NotificationsScreen";
+import SubscriptionScreen from "./src/app/account/SubscriptionScreen";
 import { RootStackParamList } from "./src/types/navigation";
+
+import WatchMovieScreen from "./src/app/movie/WatchMovieScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -24,14 +33,29 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Welcome" component={WelcomePage} />
+        {/* Auth Group */}
         <Stack.Screen name="Login" component={LoginPage} />
         <Stack.Screen name="Register" component={RegisterPage} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
         <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
+
+        {/* Main App Group */}
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+        <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
+        <Stack.Screen name="WatchMovie" component={WatchMovieScreen} />
         <Stack.Screen name="Remote" component={RemoteScreen} />
         <Stack.Screen name="Search" component={SearchPage} />
         <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
         <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
+
+        {/* Account Group */}
+        <Stack.Screen name="Playlist" component={PlaylistScreen} />
+        <Stack.Screen name="Favorites" component={FavoritesScreen} />
+        <Stack.Screen name="History" component={HistoryScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+
         <Stack.Screen
           name="Filter"
           component={FilterPage}
