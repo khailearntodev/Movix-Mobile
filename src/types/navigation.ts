@@ -12,6 +12,7 @@ export type RootStackParamList = {
   Filter: undefined;
   Search: { appliedFilters?: any } | undefined;
   WatchParty: undefined;
+    WatchPartyRoom: { roomId: string };
   Playlist: undefined;
   Favorites: undefined;
   History: undefined;

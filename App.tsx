@@ -13,6 +13,7 @@ import WelcomePage from "./src/app/welcome/page";
 import FilterPage from "./src/app/search/filter";
 import SearchPage from "./src/app/search/page";
 import WatchPartyScreen from "./src/app/watch-party/page";
+import WatchPartyRoom from "./src/app/watch-party/WatchPartyRoom";
 import MainTabNavigator from "./src/navigation/MainTabNavigator";
 import MovieDetailScreen from "./src/app/movie/MovieDetailScreen";
 import PlaylistScreen from "./src/app/account/PlaylistScreen";
@@ -45,6 +46,7 @@ export default function App() {
         <Stack.Screen name="Remote" component={RemoteScreen} />
         <Stack.Screen name="Search" component={SearchPage} />
         <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
+        <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
 
         {/* Account Group */}
         <Stack.Screen name="Playlist" component={PlaylistScreen} />

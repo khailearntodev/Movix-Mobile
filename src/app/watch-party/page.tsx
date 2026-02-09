@@ -5,6 +5,9 @@ import { Search, Plus, Play } from 'lucide-react-native';
 import { PartyRoom } from '@/types/watch-party';
 import { PartyCard } from '@/components/watch-party/PartyCard';
 import CreatePartyModal from '@/components/watch-party/CreatePartyModal';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../types/navigation';
 
 // Mock Data
 const MOCK_ROOMS: PartyRoom[] = [
@@ -18,6 +21,7 @@ export default function WatchPartyScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [quickCode, setQuickCode] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
     const filteredRooms = MOCK_ROOMS.filter(r => r.status === filter);
 
@@ -117,7 +121,7 @@ export default function WatchPartyScreen() {
                                 <PartyCard
                                     key={room.id}
                                     item={room}
-                                    onPress={() => console.log('Go to room:', room.id)}
+                                    onPress={() => navigation.navigate('WatchPartyRoom', { roomId: room.id })}
                                 />
                             ))
                         ) : (
