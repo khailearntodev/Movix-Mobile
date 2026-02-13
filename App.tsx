@@ -25,6 +25,7 @@ import SubscriptionScreen from "./src/app/account/SubscriptionScreen";
 import { RootStackParamList } from "./src/types/navigation";
 
 import WatchMovieScreen from "./src/app/movie/WatchMovieScreen";
+import AIChatScreen from "./src/app/ai/AIChatScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -47,6 +48,7 @@ export default function App() {
         <Stack.Screen name="Search" component={SearchPage} />
         <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
         <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
+        <Stack.Screen name="AIChat" component={AIChatScreen} />
 
         {/* Account Group */}
         <Stack.Screen name="Playlist" component={PlaylistScreen} />

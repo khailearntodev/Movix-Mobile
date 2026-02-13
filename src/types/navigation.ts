@@ -12,7 +12,7 @@ export type RootStackParamList = {
   Filter: undefined;
   Search: { appliedFilters?: any } | undefined;
   WatchParty: undefined;
-    WatchPartyRoom: { roomId: string };
+  WatchPartyRoom: { roomId: string };
   Playlist: undefined;
   Favorites: undefined;
   History: undefined;
@@ -20,4 +20,5 @@ export type RootStackParamList = {
   Notifications: undefined;
   Subscription: undefined;
   WatchMovie: { movie: Movie; episodeId?: string };
+  AIChat: undefined;
 };
