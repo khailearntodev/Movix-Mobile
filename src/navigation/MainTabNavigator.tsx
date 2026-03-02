@@ -1,8 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Gamepad2, User, Bell } from 'lucide-react-native';
+import { Home, Search, Users, Video, User, Bell } from 'lucide-react-native';
 import HomeScreen from '../app/home/HomeScreen';
-import RemoteScreen from '../app/remote/RemoteScreen';
+import PeopleScreen from '../app/people/PeopleScreen';
+import SearchPage from '../app/search/page';
+import WatchPartyScreen from '../app/watch-party/page';
 import AccountScreen from '@/app/account/AccountScreen';
 import NotificationsScreen from '@/app/account/NotificationsScreen';
 import { View, Text, Platform } from 'react-native';
@@ -42,20 +44,27 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="RemoteTab" 
-        component={RemoteScreen} 
+        name="PeopleTab" 
+        component={PeopleScreen} 
         options={{
-            tabBarLabel: 'Điều khiển',
-            tabBarIcon: ({ color }) => <Gamepad2 color={color} size={24} />
+            tabBarLabel: 'Nghệ sĩ',
+            tabBarIcon: ({ color }) => <Users color={color} size={24} />
         }}
       />
       <Tab.Screen 
-        name="NotificationsTab" 
-        component={NotificationsScreen} 
-        initialParams={{ isTab: true }}
+        name="SearchTab" 
+        component={SearchPage} 
         options={{
-            tabBarLabel: 'Thông báo',
-            tabBarIcon: ({ color }) => <Bell color={color} size={24} />
+            tabBarLabel: 'Tìm kiếm',
+            tabBarIcon: ({ color }) => <Search color={color} size={24} />
+        }}
+      />
+      <Tab.Screen 
+        name="WatchPartyTab" 
+        component={WatchPartyScreen} 
+        options={{
+            tabBarLabel: 'Xem chung',
+            tabBarIcon: ({ color }) => <Video color={color} size={24} />
         }}
       />
       <Tab.Screen 
