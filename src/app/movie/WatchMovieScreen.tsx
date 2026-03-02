@@ -1,12 +1,16 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { View, TouchableOpacity, Text, StatusBar, ScrollView, Image, TextInput } from 'react-native';
+import { View, TouchableOpacity, Text, StatusBar, ScrollView, Image, TextInput, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, FlatList } from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types/navigation';
-import { ArrowLeft, ThumbsUp, MessageSquare, Share2, Download, Star, Calendar, Clock, ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, ThumbsUp, MessageSquare, Share2, Download, Star, Calendar, Clock, ChevronDown, Plus, Heart, X, Check, Copy, Facebook, Instagram, Twitter, Play } from 'lucide-react-native';
 import { Movie } from '../../types/movie';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+
+import { ShareModal } from "../../components/common/ShareModal";
+import { FavoriteToast } from "../../components/common/FavoriteToast";
+import { PlaylistModal, Playlist } from "../../components/movie/PlaylistModal";
 
 type WatchMovieRouteProp = RouteProp<RootStackParamList, 'WatchMovie'>;
 
@@ -43,12 +47,27 @@ const MOCK_RECOMMENDATIONS: Movie[] = [
     { id: 103, title: "Interstellar", poster_path: "/gEU2QniL6C971PNLyfeRT389M95.jpg", backdrop_path: "", vote_average: 8.4, release_date: "2014-11-05", overview: "", media_type: "movie" },
 ];
 
+// Mock Playlists
+const MOCK_PLAYLISTS: Playlist[] = [
+    { id: '1', name: 'Phim Hành Động', count: 12 },
+    { id: '2', name: 'Xem Sau', count: 5 },
+    { id: '3', name: 'Yêu Thích', count: 28 },
+];
+
 export default function WatchMovieScreen() {
     const route = useRoute<WatchMovieRouteProp>();
     const navigation = useNavigation();
     const { movie } = route.params;
     const video = useRef<Video>(null);
     const [status, setStatus] = useState<AVPlaybackStatus>({} as AVPlaybackStatus);
+
+    // State for Dialogs
+    const [isShareVisible, setShareVisible] = useState(false);
+    const [isPlaylistVisible, setPlaylistVisible] = useState(false);
+    const [isFavoriteVisible, setFavoriteVisible] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [playlists, setPlaylists] = useState(MOCK_PLAYLISTS);
+    const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
 
     // State for Season Selection
     const [selectedSeasonId, setSelectedSeasonId] = useState(MOCK_SEASONS[0].id);
@@ -58,6 +77,27 @@ export default function WatchMovieScreen() {
         MOCK_SEASONS.find(s => s.id === selectedSeasonId)?.episodes || [],
         [selectedSeasonId]
     );
+
+    const toggleFavorite = () => {
+        setIsFavorite(!isFavorite);
+        setFavoriteVisible(true);
+        setTimeout(() => setFavoriteVisible(false), 2000); // Auto hide after 2s
+    };
+    
+    const handleCreatePlaylist = (name: string) => {
+        const newPlaylist = { id: Date.now().toString(), name: name, count: 1 };
+        setPlaylists([...playlists, newPlaylist]);
+        setSelectedPlaylists([...selectedPlaylists, newPlaylist.id]);
+    };
+    
+    const togglePlaylistSelection = (id: string) => {
+        if (selectedPlaylists.includes(id)) {
+          setSelectedPlaylists(selectedPlaylists.filter(pid => pid !== id));
+        } else {
+          setSelectedPlaylists([...selectedPlaylists, id]);
+        }
+    };
+
 
     const videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
@@ -120,11 +160,15 @@ export default function WatchMovieScreen() {
 
                     {/* Actions */}
                     <View className="flex-row justify-around mb-6 bg-zinc-900 py-3.5 rounded-xl">
-                        <TouchableOpacity className="items-center flex-row space-x-2 gap-2">
-                            <ThumbsUp color="white" size={20} />
-                            <Text className="text-white text-sm font-medium">Thích</Text>
+                        <TouchableOpacity onPress={toggleFavorite} className="items-center flex-row space-x-2 gap-2">
+                             <Heart color={isFavorite ? "#ef4444" : "white"} fill={isFavorite ? "#ef4444" : "transparent"} size={20} />
+                            <Text className={`text-sm font-medium ${isFavorite ? 'text-red-500' : 'text-white'}`}>Thích</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity className="items-center flex-row space-x-2 gap-2">
+                        <TouchableOpacity onPress={() => setPlaylistVisible(true)} className="items-center flex-row space-x-2 gap-2">
+                             <Plus color="white" size={20} />
+                            <Text className="text-white text-sm font-medium">Danh sách</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setShareVisible(true)} className="items-center flex-row space-x-2 gap-2">
                             <Share2 color="white" size={20} />
                             <Text className="text-white text-sm font-medium">Chia sẻ</Text>
                         </TouchableOpacity>
@@ -240,6 +284,24 @@ export default function WatchMovieScreen() {
                     </View>
                 </View>
             </ScrollView>
+
+            {/* Components */}
+            <ShareModal 
+                visible={isShareVisible} 
+                onClose={() => setShareVisible(false)} 
+            />
+
+            <PlaylistModal 
+                visible={isPlaylistVisible}
+                onClose={() => setPlaylistVisible(false)}
+                playlists={playlists}
+                onAddPlaylist={handleCreatePlaylist}
+                selectedPlaylists={selectedPlaylists}
+                onToggleSelection={togglePlaylistSelection}
+            />
+
+            <FavoriteToast visible={isFavoriteVisible} />
+
         </SafeAreaView>
     );
 }

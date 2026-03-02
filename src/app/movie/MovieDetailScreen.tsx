@@ -1,11 +1,14 @@
 // src/app/movie/MovieDetailScreen.tsx
-import React from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, Alert } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { ArrowLeft, Play, Star, Calendar, Clock, Plus, Share2 } from "lucide-react-native";
+import { ArrowLeft, Play, Star, Calendar, Clock, Plus, Share2, Heart } from "lucide-react-native";
 import { RootStackParamList } from "../../types/navigation";
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { ShareModal } from "../../components/common/ShareModal";
+import { FavoriteToast } from "../../components/common/FavoriteToast";
+import { PlaylistModal, Playlist } from "../../components/movie/PlaylistModal";
 
 type MovieDetailRouteProp = RouteProp<RootStackParamList, "MovieDetail">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -18,10 +21,23 @@ const MOCK_CAST = [
   { id: 4, name: "Josh Brolin", character: "Gurney Halleck", image: "https://image.tmdb.org/t/p/w200/sX2etBbIkxRaCsATyw5ZpOVVJ6I.jpg" },
 ];
 
+const MOCK_PLAYLISTS: Playlist[] = [
+  { id: '1', name: 'Phim Hành Động', count: 12 },
+  { id: '2', name: 'Xem Sau', count: 5 },
+  { id: '3', name: 'Yêu Thích', count: 28 },
+];
+
 export default function MovieDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<MovieDetailRouteProp>();
   const { movie } = route.params;
+
+  const [isShareVisible, setShareVisible] = useState(false);
+  const [isPlaylistVisible, setPlaylistVisible] = useState(false);
+  const [isFavoriteVisible, setFavoriteVisible] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [playlists, setPlaylists] = useState(MOCK_PLAYLISTS);
+  const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
 
   const getImageUrl = (path: string) =>
     path?.startsWith('http') ? path : `https://image.tmdb.org/t/p/original${path}`;
@@ -30,8 +46,56 @@ export default function MovieDetailScreen() {
     navigation.navigate("WatchMovie", { movie });
   };
 
+  const toggleFavorite = () => {
+    setIsFavorite(!isFavorite);
+    setFavoriteVisible(true);
+    setTimeout(() => setFavoriteVisible(false), 2000); // Auto hide after 2s
+  };
+
+  const handleCreatePlaylist = (name: string) => {
+    const newPlaylist = { id: Date.now().toString(), name: name, count: 1 };
+    setPlaylists([...playlists, newPlaylist]);
+    setSelectedPlaylists([...selectedPlaylists, newPlaylist.id]);
+  };
+
+  const togglePlaylistSelection = (id: string) => {
+    if (selectedPlaylists.includes(id)) {
+      setSelectedPlaylists(selectedPlaylists.filter(pid => pid !== id));
+    } else {
+      setSelectedPlaylists([...selectedPlaylists, id]);
+    }
+  };
+
   return (
     <View className="flex-1 bg-black">
+      {/* Header Actions - Fixed at top with high Z-Index */}
+      <SafeAreaView className="absolute top-0 left-0 right-0 z-50 pointer-events-box-none">
+        <View className="px-4 pt-4 flex-row justify-between items-center bg-transparent">
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            className="w-10 h-10 bg-black/40 rounded-full items-center justify-center backdrop-blur-md"
+          >
+            <ArrowLeft color="white" size={24} />
+          </TouchableOpacity>
+          
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={toggleFavorite}
+              className={`w-10 h-10 rounded-full items-center justify-center backdrop-blur-md mr-3 ${isFavorite ? 'bg-red-500/80' : 'bg-black/40'}`}
+            >
+              <Heart color="white" fill={isFavorite ? "white" : "transparent"} size={20} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              onPress={() => setShareVisible(true)}
+              className="w-10 h-10 bg-black/40 rounded-full items-center justify-center backdrop-blur-md"
+            >
+              <Share2 color="white" size={20} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
 
         {/* Hero Section */}
@@ -46,21 +110,6 @@ export default function MovieDetailScreen() {
             className="absolute inset-0"
             locations={[0.4, 0.8, 1]}
           />
-
-          {/* Header Actions */}
-          <View className="absolute top-12 left-4 z-10 w-full flex-row justify-between pr-8">
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              className="w-10 h-10 bg-black/40 rounded-full items-center justify-center backdrop-blur-md"
-            >
-              <ArrowLeft color="white" size={24} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="w-10 h-10 bg-black/40 rounded-full items-center justify-center backdrop-blur-md"
-            >
-              <Share2 color="white" size={20} />
-            </TouchableOpacity>
-          </View>
 
           {/* Movie Title & Meta on Image */}
           <View className="absolute bottom-4 left-4 right-4">
@@ -84,7 +133,10 @@ export default function MovieDetailScreen() {
             <Text className="text-black font-bold text-lg ml-2">Phát</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity className="flex-1 bg-zinc-800 py-3 rounded-lg flex-row justify-center items-center active:bg-zinc-700">
+          <TouchableOpacity 
+            onPress={() => setPlaylistVisible(true)}
+            className="flex-1 bg-zinc-800 py-3 rounded-lg flex-row justify-center items-center active:bg-zinc-700"
+          >
             <Plus color="white" size={20} />
             <Text className="text-white font-bold text-lg ml-2">Danh sách</Text>
           </TouchableOpacity>
@@ -132,8 +184,27 @@ export default function MovieDetailScreen() {
             </ScrollView>
           </View>
 
+
         </View>
       </ScrollView>
+
+      {/* Components */}
+      <ShareModal 
+        visible={isShareVisible} 
+        onClose={() => setShareVisible(false)} 
+      />
+
+      <PlaylistModal 
+        visible={isPlaylistVisible}
+        onClose={() => setPlaylistVisible(false)}
+        playlists={playlists}
+        onAddPlaylist={handleCreatePlaylist}
+        selectedPlaylists={selectedPlaylists}
+        onToggleSelection={togglePlaylistSelection}
+      />
+
+      <FavoriteToast visible={isFavoriteVisible} />
+
     </View>
   );
 }
