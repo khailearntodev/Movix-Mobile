@@ -26,6 +26,8 @@ import { RootStackParamList } from "./src/types/navigation";
 
 import WatchMovieScreen from "./src/app/movie/WatchMovieScreen";
 import AIChatScreen from "./src/app/ai/AIChatScreen";
+import PeopleScreen from "./src/app/people/PeopleScreen";
+import PersonDetailScreen from "./src/app/people/PersonDetailScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -49,6 +51,8 @@ export default function App() {
         <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
         <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
         <Stack.Screen name="AIChat" component={AIChatScreen} />
+        <Stack.Screen name="People" component={PeopleScreen} />
+        <Stack.Screen name="PersonDetail" component={PersonDetailScreen} />
 
         {/* Account Group */}
         <Stack.Screen name="Playlist" component={PlaylistScreen} />

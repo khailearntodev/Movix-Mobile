@@ -21,4 +21,6 @@ export type RootStackParamList = {
   Subscription: undefined;
   WatchMovie: { movie: Movie; episodeId?: string };
   AIChat: undefined;
+  People: undefined;
+  PersonDetail: { personId: number };
 };
