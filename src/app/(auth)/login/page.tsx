@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
 
+import { checkHealth } from "@/services/health";
 export default function LoginPage() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [email, setEmail] = useState("");
@@ -20,12 +21,30 @@ export default function LoginPage() {
             return;
         }
 
-        try {
+         try {
             setIsLoading(true);
-            Alert.alert("Thông báo", "Đăng nhập thành công (Simulation)");
-            navigation.navigate("Main");
-        } catch (error) {
-            Alert.alert("Lỗi", "Đăng nhập thất bại.");
+            console.log("Đang kiểm tra kết nối tới Backend...");
+            
+            // Gọi hàm checkHealth và lấy kết quả trả về
+            const res = await checkHealth();
+            
+            console.log("Kết nối thành công:", res);
+            
+            Alert.alert(
+                "Kết nối BE thành công!", 
+                `Phản hồi từ server:\n${JSON.stringify(res, null, 2)}`
+            );
+        } catch (error: any) {
+            console.error("❌ Lỗi kết nối:", error);
+            
+            const errorMessage = error.response 
+                ? `Status: ${error.response.status}\nData: ${JSON.stringify(error.response.data)}`
+                : error.message;
+
+            Alert.alert(
+                "Lỗi kết nối BE", 
+                `${errorMessage}\n\nHãy kiểm tra lại IP trong .env `
+            );
         } finally {
             setIsLoading(false);
         }
