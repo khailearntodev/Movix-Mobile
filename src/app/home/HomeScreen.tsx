@@ -8,7 +8,7 @@ import { MovieCard } from "../../components/movie/MovieCard";
 import { Movie } from "../../types/movie";
 import HeroBanner from "../../components/home/HeroBanner";
 import GenreList from "../../components/home/GenreList";
-import { Search } from "lucide-react-native";
+import { Search, MessageCircle } from "lucide-react-native";
 
 const MOCK_MOVIES: Movie[] = [
   { id: 1, title: "Dune: Part Two", poster_path: "/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg", backdrop_path: "", vote_average: 8.5, release_date: "2024-02-27", overview: "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.", media_type: "movie" },
@@ -51,7 +51,7 @@ export default function HomeScreen() {
             />
             <Text className="text-red-500 text-2xl font-black tracking-wider">MOVIX</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             className="w-10 h-10 bg-zinc-900 rounded-full items-center justify-center border border-zinc-800"
             onPress={() => navigation.navigate("Search")}
           >
@@ -73,7 +73,15 @@ export default function HomeScreen() {
           {renderSection("Đánh giá cao", MOCK_MOVIES)}
           {renderSection("Dành riêng cho bạn", MOCK_MOVIES.slice(2, 5))}
 
+
         </ScrollView>
+        <TouchableOpacity
+          className="absolute bottom-6 right-6 w-14 h-14 bg-red-600 rounded-full items-center justify-center shadow-lg shadow-red-900/50 z-50 pointer-events-auto"
+          onPress={() => navigation.navigate("AIChat")}
+        >
+          <MessageCircle size={28} color="white" />
+          <View className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full border border-black" />
+        </TouchableOpacity>
       </SafeAreaView>
     </View>
   );
