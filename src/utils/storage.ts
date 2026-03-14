@@ -12,6 +12,14 @@ export const getAccessToken = async () => {
     }
 };
 
+export const getRefreshToken = async () => {
+    try {
+        return await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+    } catch (error) {
+        return null;
+    }
+};
+
 export const saveToken = async (accessToken: string, refreshToken?: string) => {
     try {
         await AsyncStorage.setItem(TOKEN_KEY, accessToken);

@@ -2,6 +2,8 @@ import React from "react";
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from "expo-status-bar";
+import { AuthProvider } from './src/contexts/AuthContext';
+import { AuthProvider } from './src/contexts/AuthContext';
 import "./global.css";
 import LoginPage from "./src/app/(auth)/login/page";
 import RegisterPage from "./src/app/(auth)/register/page";
@@ -34,7 +36,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
+      <AuthProvider>
+        <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Welcome" component={WelcomePage} />
         {/* Auth Group */}
         <Stack.Screen name="Login" component={LoginPage} />
@@ -67,7 +70,8 @@ export default function App() {
           component={FilterPage}
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />
-      </Stack.Navigator>
+        </Stack.Navigator>
+      </AuthProvider>
       <StatusBar style="light" />
     </NavigationContainer>
   );
