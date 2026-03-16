@@ -7,6 +7,9 @@ import { API_URL } from "../../../constants/config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
 
+import {resetPassword} from "@/services/auth";
+
+
 type ResetPasswordRouteParams = {
     token?: string;
 };
@@ -44,28 +47,17 @@ export default function ResetPasswordPage() {
             return;
         }
 
-        setIsLoading(true);
-
         try {
-            const response = await fetch(`${API_URL}/auth/reset-password`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
+            setIsLoading(true);
+            await resetPassword(token, newPassword);
+            Alert.alert("Thành công", "Mật khẩu đã được đặt lại thành công!", [
+                {
+                    text: "OK", 
+                    onPress: () => navigation.navigate("Login"),
                 },
-                body: JSON.stringify({ token, newPassword }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                Alert.alert("Thành công", "Đặt lại mật khẩu thành công!", [
-                    { text: "OK", onPress: () => navigation.navigate("Login") }
-                ]);
-            } else {
-                Alert.alert("Lỗi", data.message || "Đã xảy ra lỗi.");
-            }
-        } catch (error) {
-            Alert.alert("Lỗi", "Không thể kết nối đến máy chủ.");
+            ]);
+        } catch (error: any) {
+            Alert.alert("Lỗi", error.response?.data?.message || "Không thể kết nối đến máy chủ.");
         } finally {
             setIsLoading(false);
         }

@@ -27,23 +27,14 @@ export interface LoginResponse {
 }
 
 export interface LoginPayload {
-  id: string;
-  username: string;
   email: string;
-  role?: string;
-  accessToken: string;
-  refreshToken: string;
-}
-
-export interface LoginPayload {
-  email: string;
-  password?: string;
+  password: string;
 }
 
 export interface RegisterPayload {
   username: string;
   email: string;
-  password?: string;
+  password: string;
   display_name?: string;
 }
 

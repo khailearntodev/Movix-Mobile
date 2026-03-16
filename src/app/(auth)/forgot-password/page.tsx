@@ -8,6 +8,8 @@ import { API_URL } from "../../../constants/config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
 
+import { forgotPassword } from "@/services/auth";
+
 export default function ForgotPasswordPage() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [email, setEmail] = useState("");
@@ -20,27 +22,21 @@ export default function ForgotPasswordPage() {
             return;
         }
 
-        setIsLoading(true);
-
         try {
-            // Real API call logic
-            const response = await fetch(`${API_URL}/auth/forgot-password`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                setIsModalOpen(true);
-            } else {
-                Alert.alert("Lỗi", data.message || "Đã xảy ra lỗi. Vui lòng thử lại.");
-            }
-        } catch (error) {
-            Alert.alert("Lỗi", "Không thể kết nối đến máy chủ.");
+            setIsLoading(true);
+            await forgotPassword(email);
+            Alert.alert(
+                "Đã gửi Email", 
+                "Mã OTP đã được gửi đến email của bạn.",
+                [
+                    {
+                        text: "OK",
+                        onPress: () => setIsModalOpen(true),
+                    }
+                ]
+            );
+        } catch (error: any) {
+            Alert.alert("Lỗi", error.response?.data?.message || "Không thể kết nối đến máy chủ.");
         } finally {
             setIsLoading(false);
         }
@@ -101,7 +97,7 @@ export default function ForgotPasswordPage() {
                                 className={`w-full py-4 rounded-lg items-center mt-5 ${isLoading ? 'bg-red-800' : 'bg-red-600 active:bg-red-700'}`}
                             >
                                 <Text className="text-white text-base font-bold">
-                                    {isLoading ? "Đang gửi..." : "Gửi yêu cầu"}
+                                    {isLoading ? "Đang gửi..." : "Gửi mã OTP"}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -113,6 +109,7 @@ export default function ForgotPasswordPage() {
             <ResetPasswordModal
                 open={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
+                email={email}
             />
         </ImageBackground>
     );

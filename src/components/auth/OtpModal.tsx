@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal, TextInput, TextInputKeyPressEventData, NativeSyntheticEvent } from "react-native";
 
 interface OtpModalProps {
@@ -14,6 +14,27 @@ interface OtpModalProps {
 export default function OtpModal({ open, onClose, onVerify, onResend, isLoading, targetEmail, apiError }: OtpModalProps) {
     const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
     const inputs = useRef<(TextInput | null)[]>([]);
+    const [countdown, setCountdown] = useState(60);
+
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (open && countdown > 0) {
+            timer = setInterval(() => {
+                setCountdown((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
+    }, [open, countdown]);
+
+    // Reset countdown when modal opens
+    useEffect(() => {
+        if (open) {
+           setCountdown(60);
+           setOtp(["", "", "", "", "", ""]);
+        }
+    }, [open]);
 
     const handleChange = (text: string, index: number) => {
         if (text.length > 1) {
@@ -36,7 +57,9 @@ export default function OtpModal({ open, onClose, onVerify, onResend, isLoading,
     };
 
     const handleResend = () => {
+        if (countdown > 0) return;
         setOtp(["", "", "", "", "", ""]);
+        setCountdown(60);
         inputs.current[0]?.focus();
         onResend && onResend();
     };
@@ -73,7 +96,7 @@ export default function OtpModal({ open, onClose, onVerify, onResend, isLoading,
                                 onKeyPress={(e) => handleKeyPress(e, index)}
                                 keyboardType="number-pad"
                                 maxLength={1}
-                                className="w-10 h-12 text-center text-xl font-bold text-white bg-zinc-800/80 border border-zinc-700 rounded-md"
+                                className="w-10 h-10 md:w-12 md:h-14 text-center text-xl font-bold text-white bg-zinc-800/80 border border-zinc-700 rounded-md"
                                 selectTextOnFocus
                             />
                         ))}
@@ -91,17 +114,27 @@ export default function OtpModal({ open, onClose, onVerify, onResend, isLoading,
 
                     <TouchableOpacity
                         onPress={handleResend}
+                        disabled={countdown > 0}
                         className="mt-6 self-center"
                     >
-                        <Text className="text-zinc-300 text-sm underline">Gửi lại mã</Text>
+                        {countdown > 0 ? (
+                            <Text className="text-zinc-500 text-sm">
+                                Gửi lại mã sau {countdown}s
+                            </Text>
+                        ) : (
+                            <Text className="text-red-500 text-sm font-semibold underline">
+                                Gửi lại mã
+                            </Text>
+                        )}
                     </TouchableOpacity>
-
+                    
                     <TouchableOpacity
                         onPress={onClose}
                         className="mt-4 self-center"
                     >
-                        <Text className="text-zinc-500 text-sm">Hủy</Text>
+                        <Text className="text-zinc-500 text-sm">Đóng</Text>
                     </TouchableOpacity>
+
                 </View>
             </View>
         </Modal>
