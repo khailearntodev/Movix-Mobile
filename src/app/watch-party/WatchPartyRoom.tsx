@@ -223,7 +223,7 @@ export default function WatchPartyRoomPage() {
                 {/* 1. Video Player Area */}
                 <View className="w-full aspect-video bg-black relative group z-10">
                     <Image
-                        source={{ uri: MOCK_ROOM_DATA.movie.poster_path }}
+                        source={{ uri: MOCK_ROOM_DATA.movie.posterUrl }}
                         className="w-full h-full opacity-60"
                         resizeMode="cover"
                     />
@@ -421,7 +421,7 @@ export default function WatchPartyRoomPage() {
                             <View className="p-5">
                                 <View className="flex-row gap-4 mb-6">
                                     <Image
-                                        source={{ uri: MOCK_ROOM_DATA.movie.poster_path }}
+                                        source={{ uri: MOCK_ROOM_DATA.movie.posterUrl }}
                                         className="w-24 h-36 rounded-lg shadow-lg border border-white/10"
                                         resizeMode="cover"
                                     />
@@ -432,7 +432,7 @@ export default function WatchPartyRoomPage() {
                                                 <Heart size={12} color="#eab308" fill="#eab308" />
                                                 <Text className="text-yellow-500 text-xs font-bold">{MOCK_ROOM_DATA.movie.vote_average}</Text>
                                             </View>
-                                            <Text className="text-slate-400 text-xs">{MOCK_ROOM_DATA.movie.release_date.split('-')[0]}</Text>
+                                            <Text className="text-slate-400 text-xs">{MOCK_ROOM_DATA.movie.releaseYear}</Text>
                                         </View>
                                         <View className="flex-row flex-wrap gap-2">
                                             <View className="bg-slate-800 px-2 py-1 rounded">
@@ -450,7 +450,7 @@ export default function WatchPartyRoomPage() {
                                         <Info size={16} color="white" /> Giới thiệu
                                     </Text>
                                     <Text className="text-slate-400 text-sm leading-6">
-                                        {MOCK_ROOM_DATA.movie.overview}
+                                        {MOCK_ROOM_DATA.movie.description}
                                     </Text>
                                 </View>
                             </View>

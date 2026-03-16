@@ -42,9 +42,51 @@ const MOCK_SEASONS = [
 
 // Mock Recommendations
 const MOCK_RECOMMENDATIONS: Movie[] = [
-    { id: 101, title: "Avatar: The Way of Water", poster_path: "/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg", backdrop_path: "", vote_average: 7.7, release_date: "2022-12-14", overview: "", media_type: "movie" },
-    { id: 102, title: "Oppenheimer", poster_path: "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg", backdrop_path: "", vote_average: 8.1, release_date: "2023-07-19", overview: "", media_type: "movie" },
-    { id: 103, title: "Interstellar", poster_path: "/gEU2QniL6C971PNLyfeRT389M95.jpg", backdrop_path: "", vote_average: 8.4, release_date: "2014-11-05", overview: "", media_type: "movie" },
+    { 
+        id: "101", 
+        slug: "avatar-way-of-water",
+        title: "Avatar: The Way of Water", 
+        subTitle: "",
+        posterUrl: "/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg", 
+        backdropUrl: "", 
+        trailerUrl: null,
+        videoUrl: null,
+        tags: ["Sci-Fi", "Advtenture"],
+        vote_average: 7.7, 
+        releaseYear: 2022, 
+        description: "", 
+        type: "MOVIE" 
+    },
+    { 
+        id: "102", 
+        slug: "oppenheimer",
+        title: "Oppenheimer", 
+        subTitle: "",
+        posterUrl: "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg", 
+        backdropUrl: "", 
+        trailerUrl: null,
+        videoUrl: null,
+        tags: ["History", "Drama"],
+        vote_average: 8.1, 
+        releaseYear: 2023, 
+        description: "", 
+        type: "MOVIE" 
+    },
+    { 
+        id: "103", 
+        slug: "interstellar",
+        title: "Interstellar", 
+        subTitle: "",
+        posterUrl: "/gEU2QniL6C971PNLyfeRT389M95.jpg", 
+        backdropUrl: "", 
+        trailerUrl: null,
+        videoUrl: null,
+        tags: ["Sci-Fi", "Drama"],
+        vote_average: 8.4, 
+        releaseYear: 2014, 
+        description: "", 
+        type: "MOVIE" 
+    },
 ];
 
 // Mock Playlists
@@ -143,11 +185,11 @@ export default function WatchMovieScreen() {
                     <View className="flex-row items-center mb-5 space-x-3 gap-2">
                         <View className="flex-row items-center bg-zinc-800/60 px-2.5 py-1.5 rounded-md space-x-1.5 gap-1.5">
                             <Star size={14} color="#fbbf24" fill="#fbbf24" />
-                            <Text className="text-zinc-200 text-xs font-semibold">{movie.vote_average?.toFixed(1) || "N/A"}</Text>
+                            <Text className="text-zinc-200 text-xs font-semibold">{(movie.vote_average || 0).toFixed(1)}</Text>
                         </View>
                         <View className="flex-row items-center bg-zinc-800/60 px-2.5 py-1.5 rounded-md space-x-1.5 gap-1.5">
                             <Calendar size={14} color="#a1a1aa" />
-                            <Text className="text-zinc-200 text-xs font-semibold">{movie.release_date?.split('-')[0] || "N/A"}</Text>
+                            <Text className="text-zinc-200 text-xs font-semibold">{movie.releaseYear || "N/A"}</Text>
                         </View>
                         <View className="flex-row items-center bg-zinc-800/60 px-2.5 py-1.5 rounded-md space-x-1.5 gap-1.5">
                             <Clock size={14} color="#a1a1aa" />
@@ -179,7 +221,7 @@ export default function WatchMovieScreen() {
                     </View>
 
                     <Text className="text-zinc-400 text-[15px] leading-6 mb-2" numberOfLines={3}>
-                        {movie.overview || "Mô tả phim chưa cập nhật. Một bộ phim hấp dẫn đang chờ bạn khám phá..."}
+                        {movie.description || "Mô tả phim chưa cập nhật. Một bộ phim hấp dẫn đang chờ bạn khám phá..."}
                     </Text>
                 </View>
 
@@ -254,7 +296,7 @@ export default function WatchMovieScreen() {
                                 onPress={() => (navigation.navigate as any)('WatchMovie', { movie: item })}
                             >
                                 <View className="w-32 h-48 rounded-lg bg-zinc-800 mb-2 overflow-hidden border border-zinc-800">
-                                    <Image source={{ uri: getImageUrl(item.poster_path) }} className="w-full h-full" resizeMode="cover" />
+                                    <Image source={{ uri: getImageUrl(item.posterUrl) }} className="w-full h-full" resizeMode="cover" />
                                 </View>
                                 <Text className="text-zinc-200 text-sm font-medium text-center" numberOfLines={1}>{item.title}</Text>
                             </TouchableOpacity>
