@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { use, useState } from "react";
 import { View, Text, TouchableOpacity, ImageBackground, TextInput, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
@@ -6,14 +6,16 @@ import { Eye, EyeOff } from "lucide-react-native";
 
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
-import { checkHealth } from "@/services/health";
 export default function LoginPage() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    const login = useAuth().signIn;
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -22,32 +24,24 @@ export default function LoginPage() {
         }
 
          try {
-            setIsLoading(true);
-            console.log("Đang kiểm tra kết nối tới Backend...");
-            
-            // Gọi hàm checkHealth và lấy kết quả trả về
-            const res = await checkHealth();
-            
-            console.log("Kết nối thành công:", res);
-            
-            Alert.alert(
-                "Kết nối BE thành công!", 
-                `Phản hồi từ server:\n${JSON.stringify(res, null, 2)}`
-            );
-        } catch (error: any) {
-            console.error("❌ Lỗi kết nối:", error);
-            
-            const errorMessage = error.response 
-                ? `Status: ${error.response.status}\nData: ${JSON.stringify(error.response.data)}`
-                : error.message;
+           setIsLoading(true);
+           const user = await login({ email, password });
 
-            Alert.alert(
-                "Lỗi kết nối BE", 
-                `${errorMessage}\n\nHãy kiểm tra lại IP trong .env `
-            );
-        } finally {
-            setIsLoading(false);
-        }
+           Alert.alert("Thành công", "Đăng nhập thành công!", [
+             {
+               text: "OK",
+               onPress: () => navigation.replace("Main"),
+             },
+           ]);
+         } catch (error: any) {
+           console.error("Login error:", error);
+           const message =
+             error.response?.data?.message ||
+             "Đăng nhập thất bại. Vui lòng thử lại.";
+           Alert.alert("Lỗi", message);
+         } finally {
+           setIsLoading(false);
+         }
     };
 
     return (

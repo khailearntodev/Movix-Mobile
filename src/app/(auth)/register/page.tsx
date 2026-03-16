@@ -7,6 +7,11 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
 
+import { verify, resendVerification } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
+import OtpModal from "@/components/auth/OtpModal";
+
+
 export default function RegisterPage() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [username, setUsername] = useState("");
@@ -16,6 +21,11 @@ export default function RegisterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
+
+    const [showOtpModal, setShowOtpModal] = useState(false);
+    const [verifyLoading, setVerifyLoading] = useState(false);
+
+    const register = useAuth().signUp;
 
     const handleRegister = async () => {
         if (username.trim().length < 4) {
@@ -40,12 +50,45 @@ export default function RegisterPage() {
 
         try {
             setIsLoading(true);
-            Alert.alert("Thông báo", "Đăng ký thành công (Simulation)");
-            // navigation.navigate("Login"); 
-        } catch (error) {
-            Alert.alert("Lỗi", "Đăng ký thất bại.");
+            await register({ username, email, password });
+            
+            setShowOtpModal(true);
+
+        } catch (error: any) {
+            const message =
+              error.response?.data?.message || "Đăng ký thất bại.";
+            Alert.alert("Lỗi", message);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (otpCode: string) => {
+        try {
+            setVerifyLoading(true);
+            
+            await verify({ email, verificationCode: otpCode });
+
+            setShowOtpModal(false);
+            Alert.alert("Thành công", "Tài khoản đã kích hoạt! Hãy đăng nhập.", [
+                { text: "OK", onPress: () => navigation.navigate("Login") }
+            ]);
+
+        } catch (error: any) {
+             const message = error.response?.data?.message || "Mã xác thực sai.";
+             Alert.alert("Lỗi", message);
+        } finally {
+            setVerifyLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        try {
+            await resendVerification({ email });
+            Alert.alert("Thông báo", "Đã gửi lại mã OTP. Vui lòng kiểm tra email.");
+        } catch (error: any) {
+            const message = error.response?.data?.message || "Không thể gửi lại mã.";
+            Alert.alert("Lỗi", message);
         }
     };
 
@@ -57,6 +100,15 @@ export default function RegisterPage() {
         >
             {/* Overlay */}
             <View className="absolute inset-0 bg-black/70" />
+
+            <OtpModal 
+                open={showOtpModal}
+                targetEmail={email}
+                isLoading={verifyLoading}
+                onClose={() => setShowOtpModal(false)}
+                onVerify={handleVerifyOtp}
+                onResend={handleResendOtp}
+            />
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === "ios" ? "padding" : undefined}
