@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
     Modal, View, Text, TouchableOpacity, TextInput,
-    ScrollView, ActivityIndicator, Image, Switch
+    ScrollView, ActivityIndicator, Image, Switch, Alert, Platform
 } from 'react-native';
 import { X, Search, Calendar, ChevronDown, Check } from 'lucide-react-native';
-import clsx from 'clsx';
+// @ts-ignore
+import DateTimePicker from '@react-native-community/datetimepicker';
+import api from '@/services/api';
+import { watchPartyService } from '@/services/watch-party';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/types/navigation';
 
-const mockSearchMovie = (query: string) => {
-    return new Promise<any[]>((resolve) => {
-        setTimeout(() => {
-            if (!query) resolve([]);
-            resolve([
-                { id: 1, title: 'Inception', poster_url: 'https://image.tmdb.org/t/p/w200/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg', media_type: 'movie', release_date: '2010' },
-                { id: 2, title: 'Breaking Bad', poster_url: 'https://image.tmdb.org/t/p/w200/ggFHVNu6YYI5L9pCfOacjizRGt.jpg', media_type: 'TV', release_date: '2008' },
-            ].filter(m => m.title.toLowerCase().includes(query.toLowerCase())));
-        }, 500);
-    })
+const searchMoviesAPI = async (query: string) => {
+    try {
+        const response = await api.get('/movies/search', { params: { q: query } });
+        return response.data.movies || [];
+    } catch (e) {
+        return [];
+    }
 };
 
 interface CreatePartyModalProps {
@@ -24,18 +27,30 @@ interface CreatePartyModalProps {
 }
 
 export default function CreatePartyModal({ visible, onClose }: CreatePartyModalProps) {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const [title, setTitle] = useState('');
     const [movieQuery, setMovieQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
+    
+    // Movie vs TV Show
     const [selectedMovie, setSelectedMovie] = useState<any>(null);
+    const [movieDetails, setMovieDetails] = useState<any>(null);
+    const [selectedSeason, setSelectedSeason] = useState<any>(null);
+    const [selectedEpisode, setSelectedEpisode] = useState<any>(null);
+
     const [isPrivate, setIsPrivate] = useState(false);
+    
     const [isScheduled, setIsScheduled] = useState(false);
+    const [date, setDate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (movieQuery.trim() && !selectedMovie) {
-                const results = await mockSearchMovie(movieQuery);
+                const results = await searchMoviesAPI(movieQuery);
                 setSearchResults(results);
             } else {
                 setSearchResults([]);
@@ -44,19 +59,60 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
         return () => clearTimeout(timer);
     }, [movieQuery, selectedMovie]);
 
-    const handleSelectMovie = (movie: any) => {
+    const handleSelectMovie = async (movie: any) => {
         setSelectedMovie(movie);
         setMovieQuery(movie.title);
         setSearchResults([]);
+        if (movie.media_type === 'TV') {
+            setLoading(true);
+            try {
+                const res = await api.get(`/movies/by-id/${movie.id}`);
+                setMovieDetails(res.data);
+                if (res.data?.seasons?.length > 0) {
+                    const firstSeason = res.data.seasons[0];
+                    setSelectedSeason(firstSeason);
+                    if (firstSeason.episodes?.length > 0) {
+                        setSelectedEpisode(firstSeason.episodes[0]);
+                    }
+                }
+            } catch (e) {
+                console.log('Error fetching TV details:', e);
+            }
+            setLoading(false);
+        }
     };
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
+        if (!title.trim() || !selectedMovie) {
+            Alert.alert('Lỗi', 'Vui lòng nhập tên phòng và chọn phim.');
+            return;
+        }
+
+        if (selectedMovie.media_type === 'TV' && !selectedEpisode) {
+            Alert.alert('Lỗi', 'Vui lòng chọn tập phim cho series này.');
+            return;
+        }
+
         setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            const dataToCreate = {
+                title: title.trim(),
+                movieId: selectedMovie.id,
+                episodeId: selectedEpisode?.id,
+                isPrivate: isPrivate,
+                scheduledAt: isScheduled ? date.toISOString() : undefined
+            };
+
+            const room = await watchPartyService.createRoom(dataToCreate);
+            Alert.alert('Thành công', 'Đã tạo phòng xem chung!');
             onClose();
-        }, 1500);
-    }
+            navigation.navigate('WatchPartyRoom', { roomId: room.id });
+        } catch (error: any) {
+            Alert.alert('Lỗi', error.response?.data?.message || 'Không thể tạo phòng lúc này.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <Modal
@@ -67,16 +123,18 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
         >
             <View className="flex-1 bg-black/80 justify-end">
                 <View className="bg-[#1F1F1F] rounded-t-3xl h-[85%] w-full overflow-hidden border-t border-slate-700">
-
                     <View className="flex-row items-center justify-between p-5 border-b border-slate-800">
-                        <Text className="text-white text-xl font-bold">🍿 Tạo phòng xem chung</Text>
+                        <Text className="text-white text-xl font-bold">Tạo phòng xem chung</Text>
                         <TouchableOpacity onPress={onClose} className="p-1 bg-slate-800 rounded-full">
                             <X size={20} color="white" />
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView className="p-5 flex-1" showsVerticalScrollIndicator={false}>
-
+                    <ScrollView 
+                        className="p-5 flex-1" 
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                    >
                         <View className="mb-5">
                             <Text className="text-slate-300 font-medium mb-3">Tên phòng</Text>
                             <TextInput
@@ -90,7 +148,7 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
 
                         <View className="mb-5 z-50">
                             <Text className="text-slate-300 font-medium mb-3">Chọn phim</Text>
-                            <View className="relative">
+                            <View className="relative z-50">
                                 <View className="bg-black/30 border border-slate-700 rounded-xl flex-row items-center px-3">
                                     <Search size={18} color="#64748b" />
                                     <TextInput
@@ -100,15 +158,20 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                                         value={movieQuery}
                                         onChangeText={(text) => {
                                             setMovieQuery(text);
-                                            if (selectedMovie) setSelectedMovie(null);
+                                            if (selectedMovie) {
+                                                setSelectedMovie(null);
+                                                setMovieDetails(null);
+                                                setSelectedSeason(null);
+                                                setSelectedEpisode(null);
+                                            }
                                         }}
                                     />
-                                    {loading && <ActivityIndicator size="small" color="#ef4444" />}
+                                    {loading && !searchResults.length && <ActivityIndicator size="small" color="#ef4444" />}
                                 </View>
 
                                 {searchResults.length > 0 && !selectedMovie && (
-                                    <View className="absolute top-14 left-0 right-0 bg-[#252525] border border-slate-700 rounded-xl shadow-xl z-50 max-h-60 overflow-hidden">
-                                        <ScrollView className="max-h-60" nestedScrollEnabled>
+                                    <View className="absolute top-14 left-0 right-0 bg-[#252525] border border-slate-700 rounded-xl shadow-xl max-h-60 overflow-hidden">
+                                        <ScrollView className="max-h-60" nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                             {searchResults.map((movie) => (
                                                 <TouchableOpacity
                                                     key={movie.id}
@@ -120,10 +183,10 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                                                         className="w-8 h-12 rounded bg-slate-700"
                                                         resizeMode="cover"
                                                     />
-                                                    <View>
-                                                        <Text className="text-white font-medium">{movie.title}</Text>
+                                                    <View className="flex-1">
+                                                        <Text className="text-white font-medium" numberOfLines={1}>{movie.title}</Text>
                                                         <Text className="text-slate-400 text-xs">
-                                                            {movie.media_type === 'TV' ? 'Series' : 'Movie'} • {movie.release_date}
+                                                            {movie.media_type === 'TV' ? 'Series' : 'Movie'} • {movie.release_date?.substring(0,4) || 'N/A'}
                                                         </Text>
                                                     </View>
                                                 </TouchableOpacity>
@@ -134,22 +197,44 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                             </View>
                         </View>
 
-                        {selectedMovie?.media_type === 'TV' && (
-                            <View className="mb-5 flex-row gap-4">
-                                <View className="flex-1 space-y-2">
-                                    <Text className="text-slate-300 font-medium">Mùa</Text>
-                                    <TouchableOpacity className="bg-black/30 border border-slate-700 p-3 rounded-xl flex-row justify-between">
-                                        <Text className="text-white">Season 1</Text>
-                                        <ChevronDown size={18} color="gray" />
-                                    </TouchableOpacity>
+                        {/* TV Show Selection (Season & Episode) */}
+                        {selectedMovie?.media_type === 'TV' && movieDetails && (
+                            <View className="mb-5 space-y-4">
+                                <View>
+                                    <Text className="text-slate-300 font-medium mb-4">Mùa</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                                        {movieDetails.seasons?.map((season: any) => (
+                                            <TouchableOpacity 
+                                                key={season.id}
+                                                onPress={() => {
+                                                    setSelectedSeason(season);
+                                                    if(season.episodes?.length > 0) setSelectedEpisode(season.episodes[0]);
+                                                }}
+                                                className={`px-4 py-2 mr-2 rounded-lg border ${selectedSeason?.id === season.id ? 'border-red-600 bg-red-600/20' : 'border-slate-700 bg-black/30'}`}>
+                                                <Text className={selectedSeason?.id === season.id ? 'text-red-500 font-bold' : 'text-slate-400'}>
+                                                    Season {season.season_number}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
                                 </View>
-                                <View className="flex-1 space-y-2">
-                                    <Text className="text-slate-300 font-medium">Tập</Text>
-                                    <TouchableOpacity className="bg-black/30 border border-slate-700 p-3 rounded-xl flex-row justify-between">
-                                        <Text className="text-white">Tập 1</Text>
-                                        <ChevronDown size={18} color="gray" />
-                                    </TouchableOpacity>
-                                </View>
+                                {selectedSeason && (
+                                    <View>
+                                        <Text className="text-slate-300 font-medium mb-4">Tập</Text>
+                                        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                                            {selectedSeason.episodes?.map((ep: any) => (
+                                                <TouchableOpacity 
+                                                    key={ep.id}
+                                                    onPress={() => setSelectedEpisode(ep)}
+                                                    className={`px-4 py-2 mr-2 rounded-lg border ${selectedEpisode?.id === ep.id ? 'border-red-600 bg-red-600/20' : 'border-slate-700 bg-black/30'}`}>
+                                                    <Text className={selectedEpisode?.id === ep.id ? 'text-red-500 font-bold' : 'text-slate-400'}>
+                                                        Tập {ep.episode_number}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </ScrollView>
+                                    </View>
+                                )}
                             </View>
                         )}
 
@@ -173,11 +258,49 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
 
                             {isScheduled && (
                                 <View className="bg-black/20 p-3 rounded-xl border border-slate-800">
-                                    <Text className="text-yellow-500 text-sm mb-2">Chọn thời gian (Demo)</Text>
-                                    <TextInput
-                                        className="text-white bg-black/40 p-2 rounded border border-slate-700"
-                                        defaultValue="20:00 - 10/02/2024"
-                                    />
+                                    <Text className="text-yellow-500 text-sm mb-2">Chọn thời gian</Text>
+                                    <View className="flex-row gap-2">
+                                        <TouchableOpacity 
+                                            className="flex-1 bg-black/40 p-3 rounded border border-slate-700"
+                                            onPress={() => setShowDatePicker(true)}>
+                                            <Text className="text-white text-center">{date.toLocaleDateString('vi-VN')}</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity 
+                                            className="flex-1 bg-black/40 p-3 rounded border border-slate-700"
+                                            onPress={() => setShowTimePicker(true)}>
+                                            <Text className="text-white text-center">{date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <View className="flex-row items-center justify-center gap-4 mt-4">
+                                        {showDatePicker && (
+                                            <DateTimePicker
+                                                value={date}
+                                                mode="date"
+                                                display="default"
+                                                themeVariant="dark"
+                                                textColor="white"
+                                                minimumDate={new Date()}
+                                                onChange={(e: any, selectedDate?: Date) => {
+                                                    setShowDatePicker(Platform.OS === 'ios');
+                                                    if (selectedDate) setDate(selectedDate);
+                                                }}
+                                            />
+                                        )}
+                                        {showTimePicker && (
+                                            <DateTimePicker
+                                                value={date}
+                                                mode="time"
+                                                display="default"
+                                                themeVariant="dark"
+                                                textColor="white"
+                                                onChange={(e: any, selectedDate?: Date) => {
+                                                    setShowTimePicker(Platform.OS === 'ios');
+                                                    if (selectedDate) setDate(selectedDate);
+                                                }}
+                                            />
+                                        )}
+                                    </View>
                                 </View>
                             )}
 
@@ -194,7 +317,6 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                                 />
                             </View>
                         </View>
-
                     </ScrollView>
 
                     <View className="p-5 border-t border-slate-800 bg-[#1F1F1F] absolute bottom-0 left-0 right-0">
@@ -220,3 +342,4 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
         </Modal>
     );
 }
+

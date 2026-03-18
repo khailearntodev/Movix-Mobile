@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ImageBackground, StatusBar, FlatList } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ImageBackground, StatusBar, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search, Plus, Play } from 'lucide-react-native';
 import { PartyRoom } from '@/types/watch-party';
@@ -8,22 +8,55 @@ import CreatePartyModal from '@/components/watch-party/CreatePartyModal';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-
-// Mock Data
-const MOCK_ROOMS: PartyRoom[] = [
-    { id: '1', title: 'Cày phim đêm khuya 🍿', movieTitle: 'Interstellar', image: 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', status: 'live', viewers: 128, host: 'Alice Nguyen', isPrivate: false },
-    { id: '2', title: 'Marvel Marathon', movieTitle: 'Avengers: Endgame', image: 'https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg', status: 'scheduled', scheduledAt: '2024-02-10T20:00:00Z', host: 'Bob Smith', isPrivate: true },
-    { id: '3', title: 'Xem lại Arcane', movieTitle: 'Arcane: Season 2', image: 'https://image.tmdb.org/t/p/w500/fqldf2t8ztc9aiwn3k6mlX3tvRT.jpg', status: 'ended', host: 'Charlie', isPrivate: false },
-];
+import { watchPartyService } from '@/services/watch-party';
 
 export default function WatchPartyScreen() {
     const [filter, setFilter] = useState<'live' | 'scheduled' | 'ended'>('live');
     const [searchQuery, setSearchQuery] = useState('');
     const [quickCode, setQuickCode] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [rooms, setRooms] = useState<PartyRoom[]>([]);
+    const [loading, setLoading] = useState(false);
+
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-    const filteredRooms = MOCK_ROOMS.filter(r => r.status === filter);
+    useEffect(() => {
+        const fetchRooms = async () => {
+          try {
+            setLoading(true);
+            const data = await watchPartyService.getAllRooms(
+              filter,
+              searchQuery,
+            );
+            setRooms(data);
+          } catch (error) {
+            console.error("Error fetching watch parties:", error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        const timer = setTimeout(() => {
+            fetchRooms();
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [filter, searchQuery]);
+
+    const handleQuickJoin = async () => {
+        if (quickCode.trim() === '') return;
+        try {
+            const data = await watchPartyService.joinByCode(quickCode.trim().toUpperCase());
+            Alert.alert("Thành công", data.message, [
+                { text: "Vào phòng", onPress: () => navigation.navigate('WatchPartyRoom', { roomId: data.roomId }) },
+                { text: "Hủy", style: "cancel" }
+            ]);
+        } catch (error: any) {
+            Alert.alert("Lỗi", "Không tìm thấy phòng với mã này, hoặc phòng đã kết thúc.");
+        } finally {
+            setQuickCode('');
+        }
+    }
 
     const FilterButton = ({ label, value, activeColor }: { label: string, value: typeof filter, activeColor: string }) => (
         <TouchableOpacity
@@ -70,7 +103,7 @@ export default function WatchPartyScreen() {
                                     autoCapitalize="characters"
                                     maxLength={6}
                                 />
-                                <TouchableOpacity disabled={!quickCode}>
+                                <TouchableOpacity disabled={!quickCode} onPress={handleQuickJoin}>
                                     <Play size={16} color={quickCode ? "white" : "#64748b"} fill={quickCode ? "white" : "transparent"} />
                                 </TouchableOpacity>
                             </View>
@@ -116,8 +149,8 @@ export default function WatchPartyScreen() {
                     </View>
 
                     <View className="pb-10">
-                        {filteredRooms.length > 0 ? (
-                            filteredRooms.map((room) => (
+                        {rooms.length > 0 ? (
+                            rooms.map((room) => (
                                 <PartyCard
                                     key={room.id}
                                     item={room}
