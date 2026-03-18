@@ -68,9 +68,6 @@ const PeopleScreen = () => {
       
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 border-b border-neutral-800">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
-          <ArrowLeft color="white" size={24} />
-        </TouchableOpacity>
         <Text className="text-white text-lg font-bold">Nghệ sĩ</Text>
       </View>
 
