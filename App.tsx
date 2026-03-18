@@ -36,39 +36,46 @@ export default function App() {
   return (
     <NavigationContainer>
       <AuthProvider>
-        <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Welcome" component={WelcomePage} />
-        {/* Auth Group */}
-        <Stack.Screen name="Login" component={LoginPage} />
-        <Stack.Screen name="Register" component={RegisterPage} />
-        <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
-        <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
+        <Stack.Navigator
+          initialRouteName="Welcome"
+          screenOptions={{ headerShown: false }}
+        >
+          <Stack.Screen name="Welcome" component={WelcomePage} />
+          {/* Auth Group */}
+          <Stack.Screen name="Login" component={LoginPage} />
+          <Stack.Screen name="Register" component={RegisterPage} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
+          <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
 
-        {/* Main App Group */}
-        <Stack.Screen name="Main" component={MainTabNavigator} />
-        <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
-        <Stack.Screen name="WatchMovie" component={WatchMovieScreen} />
-        <Stack.Screen name="Remote" component={RemoteScreen} />
-        <Stack.Screen name="Search" component={SearchPage} />
-        <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
-        <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
-        <Stack.Screen name="AIChat" component={AIChatScreen} />
-        <Stack.Screen name="People" component={PeopleScreen} />
-        <Stack.Screen name="PersonDetail" component={PersonDetailScreen} />
+          {/* Main App Group */}
+          <Stack.Screen
+            name="Main"
+            component={MainTabNavigator}
+            options={{ gestureEnabled: false }} 
+          />
+          <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
+          <Stack.Screen name="WatchMovie" component={WatchMovieScreen} />
+          <Stack.Screen name="Remote" component={RemoteScreen} />
+          <Stack.Screen name="Search" component={SearchPage} />
+          <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
+          <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
+          <Stack.Screen name="AIChat" component={AIChatScreen} />
+          <Stack.Screen name="People" component={PeopleScreen} />
+          <Stack.Screen name="PersonDetail" component={PersonDetailScreen} />
 
-        {/* Account Group */}
-        <Stack.Screen name="Playlist" component={PlaylistScreen} />
-        <Stack.Screen name="Favorites" component={FavoritesScreen} />
-        <Stack.Screen name="History" component={HistoryScreen} />
-        <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-        <Stack.Screen name="Notifications" component={NotificationsScreen} />
-        <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+          {/* Account Group */}
+          <Stack.Screen name="Playlist" component={PlaylistScreen} />
+          <Stack.Screen name="Favorites" component={FavoritesScreen} />
+          <Stack.Screen name="History" component={HistoryScreen} />
+          <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="Subscription" component={SubscriptionScreen} />
 
-        <Stack.Screen
-          name="Filter"
-          component={FilterPage}
-          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-        />
+          <Stack.Screen
+            name="Filter"
+            component={FilterPage}
+            options={{ presentation: "modal", animation: "slide_from_bottom" }}
+          />
         </Stack.Navigator>
       </AuthProvider>
       <StatusBar style="light" />
