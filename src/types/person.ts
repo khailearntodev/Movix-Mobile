@@ -1,22 +1,27 @@
+export type CreditType = 'cast' | 'crew';
+
 export interface Person {
-    id: number;
+    id: string;
     name: string;
-    role: string;
-    profilePath: string | null;
-    biography?: string;
-    birthday?: string;
-    placeOfBirth?: string;
+    role_type: string;
+    avatar_url: string | null;
+    biography?: string |null;
+    birthday?: string | null;
     gender?: number;
-    credits?: PersonCredit[];
+    movie_people?: PersonCredit[];
   }
   
   export interface PersonCredit {
-    id: number;
-    title: string;
-    posterPath: string | null;
+    id: string;
     character?: string;
-    job?: string;
-    year?: string;
-    mediaType: 'movie' | 'tv';
-    voteAverage?: number;
+    credit_type: CreditType;
+    movie:
+    {
+      id: string;
+      title: string;
+      originaml_title: string;
+      poster_url: string | null;
+      slug: string;
+      release_date: string | null;
+    };
   }
