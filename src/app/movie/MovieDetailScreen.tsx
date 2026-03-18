@@ -101,7 +101,7 @@ export default function MovieDetailScreen() {
         {/* Hero Section */}
         <View className="w-full h-[450px] relative">
           <Image
-            source={{ uri: getImageUrl(movie.poster_path) }}
+            source={{ uri: getImageUrl(movie.posterUrl) }}
             className="w-full h-full"
             resizeMode="cover"
           />
@@ -145,14 +145,14 @@ export default function MovieDetailScreen() {
         {/* Content */}
         <View className="px-5 mt-6">
           <Text className="text-zinc-400 text-sm leading-6 mb-6">
-            {movie.overview || "Chưa có mô tả cho phim này. Một bộ phim hấp dẫn đang chờ bạn khám phá..."}
+            {movie.description || "Chưa có mô tả cho phim này. Một bộ phim hấp dẫn đang chờ bạn khám phá..."}
           </Text>
 
           {/* Meta Stats */}
           <View className="flex-row justify-between mb-8 bg-zinc-900/50 p-4 rounded-xl">
             <View className="items-center">
               <Star size={20} color="#fbbf24" fill="#fbbf24" style={{ marginBottom: 4 }} />
-              <Text className="text-white font-bold text-lg">{movie.vote_average.toFixed(1)}<Text className="text-xs text-zinc-500">/10</Text></Text>
+              <Text className="text-white font-bold text-lg">{(movie.vote_average || 0).toFixed(1)}<Text className="text-xs text-zinc-500">/10</Text></Text>
               <Text className="text-zinc-500 text-xs">IMDb</Text>
             </View>
             <View className="items-center">
@@ -162,7 +162,7 @@ export default function MovieDetailScreen() {
             </View>
             <View className="items-center">
               <Calendar size={20} color="#a1a1aa" style={{ marginBottom: 4 }} />
-              <Text className="text-white font-bold text-lg">{movie.release_date ? movie.release_date.split('-')[0] : 'N/A'}</Text>
+              <Text className="text-white font-bold text-lg">{movie.releaseYear || 'N/A'}</Text>
               <Text className="text-zinc-500 text-xs">Năm</Text>
             </View>
           </View>

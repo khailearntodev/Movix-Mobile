@@ -1,19 +1,19 @@
 import React from 'react';
 import { View, Text, Image, Dimensions, FlatList, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient'; // Expo typically has this, if not I might need to adjust or use a simple overlay
-import { Movie } from '../../types/movie';
+import { Banner } from '../../types/banner';
 
 const { width } = Dimensions.get('window');
 
 interface HeroBannerProps {
-    movies: Movie[];
-    onPress: (movie: Movie) => void;
+    banners: Banner[];
+    onPress: (banner: Banner) => void;
 }
 
-const HeroBanner = ({ movies, onPress }: HeroBannerProps) => {
-    if (!movies || movies.length === 0) return null;
+const HeroBanner = ({ banners, onPress }: HeroBannerProps) => {
+    if (!banners || banners.length === 0) return null;
 
-    const renderItem = ({ item }: { item: Movie }) => (
+    const renderItem = ({ item }: { item: Banner }) => (
         <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => onPress(item)}
@@ -21,7 +21,7 @@ const HeroBanner = ({ movies, onPress }: HeroBannerProps) => {
             style={{ width: width, height: 450 }}
         >
             <Image
-                source={{ uri: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750' }}
+                source={{ uri: item.imageUrl || `https://via.placeholder.com/500x750?text=${item.title}` }}
                 className="w-full h-full"
                 resizeMode="cover"
             />
@@ -33,17 +33,19 @@ const HeroBanner = ({ movies, onPress }: HeroBannerProps) => {
                     {item.title}
                 </Text>
                 <Text className="text-zinc-300 text-sm text-center mb-4" numberOfLines={2}>
-                    {item.overview}
+                    {item.description || item.movie?.description || ''}
                 </Text>
                 <View className="flex-row justify-center gap-2">
-                    {item.media_type && (
+                    {item.movie?.type && (
                         <View className="bg-red-600 px-2 py-1 rounded">
-                            <Text className="text-white text-xs font-bold uppercase">{item.media_type}</Text>
+                            <Text className="text-white text-xs font-bold uppercase">{item.movie.type}</Text>
                         </View>
                     )}
-                    <View className="bg-zinc-800 px-2 py-1 rounded">
-                        <Text className="text-white text-xs font-bold">⭐ {item.vote_average?.toFixed(1)}</Text>
-                    </View>
+                    {item.movie?.vote_average !== undefined && (
+                        <View className="bg-zinc-800 px-2 py-1 rounded">
+                            <Text className="text-white text-xs font-bold">⭐ {(item.movie.vote_average || 0).toFixed(1)}</Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </TouchableOpacity>
@@ -52,7 +54,7 @@ const HeroBanner = ({ movies, onPress }: HeroBannerProps) => {
     return (
         <View className="mb-6">
             <FlatList
-                data={movies}
+                data={banners}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id.toString()}
                 horizontal
@@ -64,5 +66,6 @@ const HeroBanner = ({ movies, onPress }: HeroBannerProps) => {
         </View>
     );
 };
+
 
 export default HeroBanner;
