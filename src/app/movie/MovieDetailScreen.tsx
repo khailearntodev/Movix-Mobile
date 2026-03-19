@@ -1,14 +1,18 @@
-// src/app/movie/MovieDetailScreen.tsx
-import React, { useState } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
+
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, ScrollView, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
-import { ArrowLeft, Play, Star, Calendar, Clock, Plus, Share2, Heart } from "lucide-react-native";
+import { ArrowLeft, Play, Star, Calendar, Clock, Plus, Share2, Heart, MessageCircle, Send, AlertTriangle, MessageSquare, X } from "lucide-react-native";
 import { RootStackParamList } from "../../types/navigation";
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ShareModal } from "../../components/common/ShareModal";
 import { FavoriteToast } from "../../components/common/FavoriteToast";
+import { ToastMessage, ToastType } from "../../components/common/ToastMessage";
 import { PlaylistModal, Playlist } from "../../components/movie/PlaylistModal";
+import { CommentList } from "../../components/movie/comments/CommentList";
+import { CommentInput } from "../../components/movie/comments/CommentInput";
+import { useComments } from "../../hooks/useComments";
 
 type MovieDetailRouteProp = RouteProp<RootStackParamList, "MovieDetail">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -38,6 +42,30 @@ export default function MovieDetailScreen() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [playlists, setPlaylists] = useState(MOCK_PLAYLISTS);
   const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
+  
+  // Toast State
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<ToastType>("success");
+
+  const showToast = (message: string, type: ToastType = "success") => {
+    setToastMessage(message);
+    setToastType(type);
+    setToastVisible(true);
+  };
+
+  const {
+    comments,
+    isLoadingComments,
+    newComment,
+    setNewComment,
+    isPostingComment,
+    handlePostComment,
+    isSpoiler,
+    setIsSpoiler,
+    replyingTo,
+    setReplyingTo
+  } = useComments(movie.id.toString(), showToast);
 
   const getImageUrl = (path: string) =>
     path?.startsWith('http') ? path : `https://image.tmdb.org/t/p/original${path}`;
@@ -96,9 +124,14 @@ export default function MovieDetailScreen() {
         </View>
       </SafeAreaView>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        style={{ flex: 1 }}
+      >
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
 
-        {/* Hero Section */}
+          {/* Hero Section */}
         <View className="w-full h-[450px] relative">
           <Image
             source={{ uri: getImageUrl(movie.posterUrl) }}
@@ -184,9 +217,28 @@ export default function MovieDetailScreen() {
             </ScrollView>
           </View>
 
+          {/* Comments Section */}
+          <CommentList 
+            comments={comments}
+            isLoading={isLoadingComments}
+            onReply={setReplyingTo}
+          />
 
         </View>
       </ScrollView>
+
+      {/* Fixed Comment Input */}
+      <CommentInput 
+        newComment={newComment}
+        setNewComment={setNewComment}
+        handlePostComment={handlePostComment}
+        isPostingComment={isPostingComment}
+        replyingTo={replyingTo}
+        setReplyingTo={setReplyingTo}
+        isSpoiler={isSpoiler}
+        setIsSpoiler={setIsSpoiler}
+      />
+      </KeyboardAvoidingView>
 
       {/* Components */}
       <ShareModal 
@@ -204,7 +256,15 @@ export default function MovieDetailScreen() {
       />
 
       <FavoriteToast visible={isFavoriteVisible} />
+      
+      <ToastMessage 
+        visible={toastVisible}
+        message={toastMessage}
+        type={toastType}
+        onHide={() => setToastVisible(false)}
+      />
 
     </View>
   );
 }
+
