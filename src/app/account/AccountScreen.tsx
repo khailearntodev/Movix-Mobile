@@ -1,16 +1,30 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu } from 'lucide-react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { getMyProfile, UserProfile } from '@/services/user.service';
 
 const AccountScreen = () => {
     const navigation = useNavigation<any>();
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const user = {
-        name: "Người dùng Movix",
-        email: "user@example.com",
-        avatar: "https://github.com/shadcn.png",
-        isPremium: true
+    useFocusEffect(
+        useCallback(() => {
+            loadUserProfile();
+        }, [])
+    );
+
+    const loadUserProfile = async () => {
+        try {
+            setIsLoading(true);
+            const data = await getMyProfile();
+            setUserProfile(data);
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const renderMenuItem = (icon: any, label: string, onPress: () => void, color = "#a1a1aa", showBadge = false) => (
@@ -41,23 +55,37 @@ const AccountScreen = () => {
             </View>
 
             <ScrollView className="flex-1 px-4">
+
                 {/* User Profile */}
-                <TouchableOpacity
-                    className="items-center mb-8"
-                    onPress={() => navigation.navigate('EditProfile')}
-                >
-                    <Image
-                        source={{ uri: user.avatar }}
-                        className="w-24 h-24 rounded-md mb-3 border-2 border-transparent"
-                    />
-                    <Text className="text-white text-xl font-bold mb-1">{user.name}</Text>
-                    <View className="flex-row items-center gap-1 bg-zinc-800 px-3 py-1 rounded-full">
-                        {user.isPremium && <Crown size={12} color="#eab308" />}
-                        <Text className="text-zinc-300 text-xs font-medium uppercase">
-                            {user.isPremium ? "Thành viên Premium" : "Thành viên miễn phí"}
-                        </Text>
+                {isLoading ? (
+                    <View className="items-center mb-8 h-32 justify-center">
+                        <ActivityIndicator color="#ef4444" />
                     </View>
-                </TouchableOpacity>
+                ) : userProfile ? (
+                    <TouchableOpacity
+                        className="items-center mb-8"
+                        onPress={() => navigation.navigate('EditProfile')}
+                    >
+                        <Image
+                            source={{ uri: userProfile.avatar_url || 'https://github.com/shadcn.png' }}
+                            className="w-24 h-24 rounded-md mb-3 border-2 border-transparent"
+                        />
+                        <Text className="text-white text-xl font-bold mb-1">
+                            {userProfile.display_name || userProfile.username || 'Người dùng'}
+                        </Text>
+                        <View className="flex-row items-center gap-1 bg-zinc-800 px-3 py-1 rounded-full">
+                            {userProfile.id === 'PREMIUM' && <Crown size={12} color="#eab308" />}
+                            <Text className="text-zinc-300 text-xs font-medium uppercase">
+                                {userProfile.id || 'Thành viên'}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                ) : (
+                    <View className="items-center mb-8">
+                        <Text className="text-zinc-400">Không thể tải thông tin người dùng</Text>
+                    </View>
+                )}
+
 
                 {/* Quick Actions (Notifications, Downloads) */}
                 <View className="flex-row justify-center gap-8 mb-8">

@@ -5,9 +5,9 @@ import HomeScreen from '../app/home/HomeScreen';
 import PeopleScreen from '../app/people/PeopleScreen';
 import SearchPage from '../app/search/page';
 import WatchPartyScreen from '../app/watch-party/page';
-import AccountScreen from '@/app/account/AccountScreen';
-import NotificationsScreen from '@/app/account/NotificationsScreen';
+import ProfileStackNavigator from './ProfileStackNavigator';
 import { View, Text, Platform } from 'react-native';
+
 
 const Tab = createBottomTabNavigator();
 
@@ -69,7 +69,7 @@ export default function MainTabNavigator() {
       />
       <Tab.Screen 
         name="ProfileTab" 
-        component={AccountScreen} 
+        component={ProfileStackNavigator} 
         options={{
             tabBarLabel: 'Cá nhân',
             tabBarIcon: ({ color }) => <User color={color} size={24} />
