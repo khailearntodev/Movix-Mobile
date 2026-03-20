@@ -125,17 +125,17 @@ function mapToMovie(raw: any): Movie {
     recommendations: (raw.recommendations || []).map(mapToMovie),
   };
 }
-export async function getMovieData(slug: string) {
+
+export async function getMovie(slug: string): Promise<Movie> {
   try {
     const { data } = await api.get<MovieResponse>(`/movies/${slug}`);
-    const movie = mapToMovie(data);
-    return { movie };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return mapToMovie(data);
   } catch (error: any) {
     console.error("Lỗi lấy phim:", error.response?.data || error.message);
     throw new Error("Không tìm thấy phim");
   }
 }
+
 export async function getTrendingMovies(): Promise<Movie[]> {
   try {
     const { data } = await api.get<MovieResponse[]>('/movies/trending');
