@@ -5,7 +5,7 @@ import { Search, Plus, Play } from 'lucide-react-native';
 import { PartyRoom } from '@/types/watch-party';
 import { PartyCard } from '@/components/watch-party/PartyCard';
 import CreatePartyModal from '@/components/watch-party/CreatePartyModal';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { watchPartyService } from '@/services/watch-party';
@@ -20,28 +20,27 @@ export default function WatchPartyScreen() {
 
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-    useEffect(() => {
-        const fetchRooms = async () => {
-          try {
-            setLoading(true);
-            const data = await watchPartyService.getAllRooms(
-              filter,
-              searchQuery,
-            );
-            setRooms(data);
-          } catch (error) {
-            console.error("Error fetching watch parties:", error);
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        const timer = setTimeout(() => {
-            fetchRooms();
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [filter, searchQuery]);
+    useFocusEffect(
+        React.useCallback(() => {
+            const fetchRooms = async () => {
+              try {
+                setLoading(true);
+                const data = await watchPartyService.getAllRooms(filter, searchQuery);
+                setRooms(data);
+              } catch (error) {
+                console.error("Error fetching watch parties:", error);
+              } finally {
+                setLoading(false);
+              }
+            };
+    
+            const timer = setTimeout(() => {
+                fetchRooms();
+            }, 500);
+    
+            return () => clearTimeout(timer);
+        }, [filter, searchQuery])
+    );
 
     const handleQuickJoin = async () => {
         if (quickCode.trim() === '') return;

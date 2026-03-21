@@ -41,8 +41,8 @@ export const refreshToken = async (refreshToken: string): Promise<{ accessToken:
 };
 
 export const getMe = async (): Promise<User> => {
-    const response = await api.get<ApiResponse<User>>('/profile/me');
-    return response.data.data;
+    const response = await api.get<User>('/profile/me');
+    return response.data;
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {
