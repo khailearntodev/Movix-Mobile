@@ -20,13 +20,13 @@ export const MovieCard = ({ movie, onPress }: MovieCardProps) => {
     >
       <View className="relative w-36 h-52 rounded-xl overflow-hidden bg-zinc-800 shadow-sm border border-zinc-800">
         <Image
-          source={{ uri: getImageUrl(movie.poster_path) }}
+          source={{ uri: getImageUrl(movie.posterUrl) }}
           className="w-full h-full"
           resizeMode="cover"
         />
         <View className="absolute top-2 right-2 bg-black/60 px-2 py-1 rounded-md flex-row items-center space-x-1">
             <Star size={12} color="#fbbf24" fill="#fbbf24" />
-            <Text className="text-white text-xs font-bold">{movie.vote_average.toFixed(1)}</Text>
+            <Text className="text-white text-xs font-bold">{(movie.vote_average || 0).toFixed(1)}</Text>
         </View>
       </View>
       <Text className="text-zinc-200 font-medium text-sm truncate" numberOfLines={1}>
