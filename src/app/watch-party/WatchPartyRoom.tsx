@@ -360,13 +360,13 @@ export default function WatchPartyRoomPage() {
                 }
 
                 if (action === 'play') {
-                    if (!status.isPlaying) {
+                    if (status.isLoaded && !status.isPlaying) {
                         console.log(`[SYNC] Play`);
                         await videoRef.current.playAsync();
                         setIsPlaying(true);
                     }
                 } else if (action === 'pause') {
-                     if (status.isPlaying) {
+                     if (status.isLoaded && status.isPlaying) {
                         console.log(`[SYNC] Pause`);
                         await videoRef.current.pauseAsync();
                         setIsPlaying(false);
