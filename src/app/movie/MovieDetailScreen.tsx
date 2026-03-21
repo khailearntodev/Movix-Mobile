@@ -13,17 +13,11 @@ import { PlaylistModal, Playlist } from "../../components/movie/PlaylistModal";
 import { CommentList } from "../../components/movie/comments/CommentList";
 import { CommentInput } from "../../components/movie/comments/CommentInput";
 import { useComments } from "../../hooks/useComments";
+import { getMovie } from "../../services/movie.service";
+import { Movie } from "../../types/movie";
 
 type MovieDetailRouteProp = RouteProp<RootStackParamList, "MovieDetail">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-// Mock Cast Data
-const MOCK_CAST = [
-  { id: 1, name: "Timothée Chalamet", character: "Paul Atreides", image: "https://image.tmdb.org/t/p/w200/BE2sdjpgEHrPSjUI8AXDvZwysX.jpg" },
-  { id: 2, name: "Zendaya", character: "Chani", image: "https://image.tmdb.org/t/p/w200/cbCibOABS58y2dP7yT4AJAgqZ3.jpg" },
-  { id: 3, name: "Rebecca Ferguson", character: "Lady Jessica", image: "https://image.tmdb.org/t/p/w200/lJloTOheuQSirSLXNA3JHsrMNfH.jpg" },
-  { id: 4, name: "Josh Brolin", character: "Gurney Halleck", image: "https://image.tmdb.org/t/p/w200/sX2etBbIkxRaCsATyw5ZpOVVJ6I.jpg" },
-];
 
 const MOCK_PLAYLISTS: Playlist[] = [
   { id: '1', name: 'Phim Hành Động', count: 12 },
@@ -35,6 +29,27 @@ export default function MovieDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<MovieDetailRouteProp>();
   const { movie } = route.params;
+
+  const [movieData, setMovieData] = useState<Movie>(movie);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  useEffect(() => {
+    const fetchMovieDetail = async () => {
+      if (!movie.slug && !movie.id) return;
+      setIsLoading(true);
+      try {
+        const slugOrId = movie.slug || movie.id.toString();
+        const data = await getMovie(slugOrId);
+        setMovieData(data);
+      } catch (error) {
+        console.error("Failed to fetch movie details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMovieDetail();
+  }, [movie]);
 
   const [isShareVisible, setShareVisible] = useState(false);
   const [isPlaylistVisible, setPlaylistVisible] = useState(false);
@@ -65,13 +80,15 @@ export default function MovieDetailScreen() {
     setIsSpoiler,
     replyingTo,
     setReplyingTo
-  } = useComments(movie.id.toString(), showToast);
+  } = useComments(movieData.id.toString(), showToast);
 
-  const getImageUrl = (path: string) =>
-    path?.startsWith('http') ? path : `https://image.tmdb.org/t/p/original${path}`;
+  const getImageUrl = (path: string | null | undefined) => {
+    if (!path) return 'https://via.placeholder.com/500x750?text=No+Image';
+    return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/original${path}`;
+  };
 
   const handleWatch = () => {
-    navigation.navigate("WatchMovie", { movie });
+    navigation.navigate("WatchMovie", { movie: movieData });
   };
 
   const toggleFavorite = () => {
@@ -134,7 +151,7 @@ export default function MovieDetailScreen() {
           {/* Hero Section */}
         <View className="w-full h-[450px] relative">
           <Image
-            source={{ uri: getImageUrl(movie.posterUrl) }}
+            source={{ uri: getImageUrl(movieData.posterUrl) }}
             className="w-full h-full"
             resizeMode="cover"
           />
@@ -146,12 +163,12 @@ export default function MovieDetailScreen() {
 
           {/* Movie Title & Meta on Image */}
           <View className="absolute bottom-4 left-4 right-4">
-            <Text className="text-white text-4xl font-black mb-2 shadow-sm tracking-tighter text-center">{movie.title}</Text>
+            <Text className="text-white text-4xl font-black mb-2 shadow-sm tracking-tighter text-center">{movieData.title}</Text>
 
             <View className="flex-row justify-center items-center space-x-4 mb-4">
-              <Text className="text-zinc-300 font-medium bg-zinc-800/80 px-2 py-0.5 rounded text-xs">2024</Text>
-              <Text className="text-zinc-300 font-medium bg-zinc-800/80 px-2 py-0.5 rounded text-xs">Phim Hành Động</Text>
-              <Text className="text-zinc-300 font-medium bg-zinc-800/80 px-2 py-0.5 rounded text-xs">13+</Text>
+              <Text className="text-zinc-300 font-medium bg-zinc-800/80 px-2 py-0.5 rounded text-xs">{movieData.releaseYear || 'N/A'}</Text>
+              <Text className="text-zinc-300 font-medium bg-zinc-800/80 px-2 py-0.5 rounded text-xs">{movieData.tags?.[0] || 'Phim'}</Text>
+              <Text className="text-zinc-300 font-medium bg-zinc-800/80 px-2 py-0.5 rounded text-xs">{movieData.type === 'TV' ? 'TV Series' : 'Movie'}</Text>
             </View>
           </View>
         </View>
@@ -178,24 +195,24 @@ export default function MovieDetailScreen() {
         {/* Content */}
         <View className="px-5 mt-6">
           <Text className="text-zinc-400 text-sm leading-6 mb-6">
-            {movie.description || "Chưa có mô tả cho phim này. Một bộ phim hấp dẫn đang chờ bạn khám phá..."}
+            {movieData.description || "Chưa có mô tả cho phim này. Một bộ phim hấp dẫn đang chờ bạn khám phá..."}
           </Text>
 
           {/* Meta Stats */}
           <View className="flex-row justify-between mb-8 bg-zinc-900/50 p-4 rounded-xl">
             <View className="items-center">
               <Star size={20} color="#fbbf24" fill="#fbbf24" style={{ marginBottom: 4 }} />
-              <Text className="text-white font-bold text-lg">{(movie.vote_average || 0).toFixed(1)}<Text className="text-xs text-zinc-500">/10</Text></Text>
+              <Text className="text-white font-bold text-lg">{(movieData.vote_average || movieData.rating || 0).toFixed(1)}<Text className="text-xs text-zinc-500">/10</Text></Text>
               <Text className="text-zinc-500 text-xs">IMDb</Text>
             </View>
             <View className="items-center">
               <Clock size={20} color="#a1a1aa" style={{ marginBottom: 4 }} />
-              <Text className="text-white font-bold text-lg">120</Text>
+              <Text className="text-white font-bold text-lg">{parseInt((movieData.duration || '0').toString()) || '?'}</Text>
               <Text className="text-zinc-500 text-xs">Phút</Text>
             </View>
             <View className="items-center">
               <Calendar size={20} color="#a1a1aa" style={{ marginBottom: 4 }} />
-              <Text className="text-white font-bold text-lg">{movie.releaseYear || 'N/A'}</Text>
+              <Text className="text-white font-bold text-lg">{movieData.releaseYear || 'N/A'}</Text>
               <Text className="text-zinc-500 text-xs">Năm</Text>
             </View>
           </View>
@@ -204,16 +221,24 @@ export default function MovieDetailScreen() {
           <View className="mb-8">
             <Text className="text-white text-lg font-bold mb-4">Diễn viên hàng đầu</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {MOCK_CAST.map((actor) => (
-                <View key={actor.id} className="mr-4 items-center w-20">
-                  <Image
-                    source={{ uri: actor.image }}
-                    className="w-16 h-16 rounded-full mb-2 bg-zinc-800"
-                  />
-                  <Text className="text-white text-xs text-center font-medium" numberOfLines={1}>{actor.name}</Text>
-                  <Text className="text-zinc-500 text-[10px] text-center" numberOfLines={1}>{actor.character}</Text>
-                </View>
-              ))}
+              {(movieData.cast || []).length > 0 ? (
+                movieData.cast!.map((actor) => (
+                  <TouchableOpacity 
+                    key={actor.id} 
+                    className="mr-4 items-center w-20"
+                    onPress={() => navigation.navigate("PersonDetail", { personId: actor.id.toString() })}
+                  >
+                    <Image
+                      source={{ uri: getImageUrl(actor.avatar_url || actor.profileUrl) }}
+                      className="w-16 h-16 rounded-full mb-2 bg-zinc-800"
+                    />
+                    <Text className="text-white text-xs text-center font-medium" numberOfLines={1}>{actor.name}</Text>
+                    <Text className="text-zinc-500 text-[10px] text-center" numberOfLines={1}>{actor.character}</Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text className="text-zinc-500 text-sm italic ml-2">Đang cập nhật diễn viên...</Text>
+              )}
             </ScrollView>
           </View>
 
