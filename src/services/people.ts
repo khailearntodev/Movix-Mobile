@@ -12,8 +12,10 @@ interface PeopleResponse {
 }
 
 export const peopleService = {
-    getAll: async (page = 1, limit = 20, search = ''): Promise<PeopleResponse> => {
-        const params = { page, limit, q: search };
+    getAll: async (page = 1, limit = 20, search = '', role = ''): Promise<PeopleResponse> => {
+        const params: any = { page, limit };
+        if (search) params.q = search;
+        if (role) params.role = role;
         const response = await api.get<PeopleResponse>('/people', { params });
         return response.data;
     },
