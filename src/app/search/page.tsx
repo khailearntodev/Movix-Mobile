@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, FlatList, ActivityIndicator, Image, Modal, Animated, DeviceEventEmitter } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, FlatList, SectionList, ActivityIndicator, Image, Modal, Animated, DeviceEventEmitter } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
@@ -18,10 +18,19 @@ import { StatusBar } from 'expo-status-bar';
 import { MOCK_MOVIES } from '../../data/mockData';
 import MovieCard from '../../components/MovieCard';
 import { FilterValues } from '../../components/search/FilterForm';
+import { search } from '../../services/movie.service';
+import type { Movie } from '../../types/movie';
+import type { Person } from '../../types/person';
 
 // --- TYPES ---
 type SearchRouteProp = RouteProp<RootStackParamList, 'Search'>;
 type SearchMode = 'normal' | 'ai_text' | 'voice' | 'image';
+
+type SearchSection = {
+    title: string;
+    data: (Movie | Person)[];
+    type: 'movie' | 'person';
+};
 
 export default function SearchPage() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -37,7 +46,8 @@ export default function SearchPage() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Data States
-    const [results, setResults] = useState<any[]>([]);
+    const [sections, setSections] = useState<SearchSection[]>([]);
+    const [results, setResults] = useState<any[]>([]); // Keep for backward compatibility if needed, or remove
     const [isLoading, setIsLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [filters, setFilters] = useState<FilterValues | null>(null);
@@ -74,23 +84,75 @@ export default function SearchPage() {
             useNativeDriver: true,
         }).start();
     }, [searchMode]);
+    useEffect(() => {
+        if (searchMode !== 'normal') return;
+
+        const delayDebounceFn = setTimeout(() => {
+            if (normalQuery.trim()) {
+                handleSearch(normalQuery, true);
+            } else if (normalQuery === '') {
+                 setResults([]);
+                 setSections([]);
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [normalQuery]);
 
     // --- HANDLERS (LOGIC MOCK) ---
 
-    const handleSearch = (source: string, reset = false) => {
+    const handleSearch = async (source: string, reset = false) => {
         setIsLoading(true);
         console.log(`🔍 Searching via [${searchMode}]:`, source);
 
-        // Giả lập API call
-        setTimeout(() => {
-            const newMovies = [...MOCK_MOVIES];
-            // Xáo trộn dữ liệu chút cho cảm giác khác nhau
-            const shuffled = newMovies.sort(() => 0.5 - Math.random());
+        let query = "";
+        // Determine query based on mode or source
+        if (searchMode === 'normal') {
+            query = normalQuery;
+        } else if (searchMode === 'ai_text') {
+            query = aiTextQuery;
+        }
 
-            setResults(prev => reset ? shuffled : [...prev, ...shuffled.map(m => ({ ...m, id: Math.random() }))]);
+        // If 'source' is the query text (override)
+        if (source && !['voice', 'image', 'filter_event', 'filter_param', 'more'].includes(source)) {
+            query = source;
+        }
+
+        if (!query.trim()) {
+            if (reset) {
+                setResults([]);
+                setSections([]);
+            }
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const { movies, people } = await search(query);
+
+            const newSections: SearchSection[] = [];
+            if (movies.length > 0) {
+                // @ts-ignore: Ensuring type compatibility for now
+                newSections.push({ title: 'Phim', data: movies, type: 'movie' });
+            }
+            if (people.length > 0) {
+                // @ts-ignore: Ensuring type compatibility for now
+                newSections.push({ title: 'Nghệ sĩ', data: people, type: 'person' });
+            }
+
+            setSections(newSections);
+            // Backward compatibility / simplified list if needed
+            setResults([...movies, ...people]);
+
+        } catch (error) {
+            console.error("Search error:", error);
+            // Fallback empty
+            setSections([]);
+            setResults([]);
+        } finally {
             setIsLoading(false);
             if (source === 'voice') setVoiceStatus('idle');
-        }, 1500);
+        }
     };
 
     const toggleMode = (mode: SearchMode) => {
@@ -282,14 +344,58 @@ export default function SearchPage() {
                 {searchMode === 'image' && renderImagePanel()}
 
                 {/* --- 4. DANH SÁCH KẾT QUẢ --- */}
-                <FlatList
-                    data={results}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <MovieCard movie={item} onPress={() => console.log("Click phim:", item.title)} />
+                <SectionList
+                    sections={sections}
+                    keyExtractor={(item, index) => {
+                        // Use a fallback if item or id is missing to prevent crashes
+                        const id = item?.id ? item.id.toString() : `fallback-${index}`;
+                        return id + index;
+                    }}
+                    renderSectionHeader={({ section: { title } }) => (
+                        <Text className="text-white text-lg font-bold mb-3 mt-4">{title}</Text>
                     )}
+                    renderItem={({ item, section }) => {
+                        if (!item) return null; // Safety check
+
+                        if (section.type === 'movie') {
+                            const movie = item as Movie;
+                            // Add a margin to MovieCard for clearer separation
+                            // Corrected navigation: Pass the full 'movie' object as 'movie' param
+                            return (
+                                <View className="mb-4">
+                                    <MovieCard
+                                        movie={movie}
+                                        onPress={() => navigation.navigate('MovieDetail', { movie })}
+                                    />
+                                </View>
+                            );
+                        } else {
+                            const person = item as Person;
+                            return (
+                                <TouchableOpacity
+                                    className="flex-row items-center bg-zinc-900 mb-3 p-3 rounded-xl border border-zinc-800"
+                                    onPress={() => {
+                                        if (person?.id) {
+                                            navigation.navigate('PersonDetail', { personId: person.id });
+                                        }
+                                    }}
+                                >
+                                    <View className="w-12 h-12 rounded-full overflow-hidden bg-zinc-800">
+                                        <Image
+                                            source={{ uri: person.avatar_url || "https://placehold.net/100x100.png" }}
+                                            className="w-full h-full"
+                                            resizeMode="cover"
+                                        />
+                                    </View>
+                                    <View className="ml-3 flex-1">
+                                        <Text className="text-white font-bold text-base">{person.name}</Text>
+                                        <Text className="text-zinc-400 text-xs">{person.role_type}</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        }
+                    }}
                     contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
-                    onEndReached={() => !isLoading && handleSearch('more')}
                     ListHeaderComponent={() => (
                         <View className="mb-2">
                             {/* Hiển thị filter tags nếu có */}
@@ -309,7 +415,7 @@ export default function SearchPage() {
                                 {searchMode === 'normal' && (
                                     <>
                                         <SearchIcon size={60} color="#3f3f46" />
-                                        <Text className="text-zinc-600 mt-4 font-bold">Tìm kiếm phim yêu thích</Text>
+                                        <Text className="text-zinc-600 mt-4 font-bold">Tìm kiếm phim hoặc nghệ sĩ</Text>
                                     </>
                                 )}
                                 {searchMode === 'ai_text' && (
