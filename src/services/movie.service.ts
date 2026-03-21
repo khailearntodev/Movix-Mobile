@@ -2,6 +2,7 @@ import api from './api';
 import type { Movie, MovieResponse, Season, Genre } from "@/types/movie";
 import type { Actor } from "@/types/actor";
 import type { Director } from "@/types/director";
+import type { Person } from "@/types/person";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapSeasons(rawSeasons: any[] = []): Season[] {
@@ -143,5 +144,31 @@ export async function getTrendingMovies(): Promise<Movie[]> {
   } catch (error) {
     console.error("Lỗi lấy phim Trending:", error);
     return [];
+  }
+}
+
+export async function search(query: string): Promise<{ movies: Movie[]; people: Person[] }> {
+  if (!query) return { movies: [], people: [] };
+
+  try {
+    const { data } = await api.get<{ movies: any[]; people: any[] }>('/movies/search', {
+      params: { q: query },
+    });
+
+    const movies = (data.movies || []).map(mapToMovie);
+    const people = (data.people || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      role_type: p.role_type,
+      avatar_url: p.avatar_url,
+      biography: p.biography,
+      birthday: p.birthday,
+      gender: p.gender,
+    }));
+
+    return { movies, people };
+  } catch (error) {
+    console.error("Lỗi tìm kiếm:", error);
+    return { movies: [], people: [] };
   }
 }
