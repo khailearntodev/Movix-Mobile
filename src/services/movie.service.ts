@@ -172,3 +172,25 @@ export async function search(query: string): Promise<{ movies: Movie[]; people: 
     return { movies: [], people: [] };
   }
 }
+export interface MovieSection {
+  id: string;
+  title: string;
+  movies: Movie[];
+}
+
+export async function getDynamicSections(): Promise<MovieSection[]> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await api.get<any[]>("/homepage");
+    return data.map((section) => ({
+      id: section.id,
+      title: section.title,
+      movies: section.movie_links
+        .map((link: any) => (link.movie ? mapToMovie(link.movie) : null))
+        .filter(Boolean) as Movie[],
+    }));
+  } catch (error) {
+    console.error("Lỗi lấy dynamic sections:", error);
+    return [];
+  }
+}

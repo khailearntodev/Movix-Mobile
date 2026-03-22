@@ -14,16 +14,18 @@ import { CommentList } from "../../components/movie/comments/CommentList";
 import { CommentInput } from "../../components/movie/comments/CommentInput";
 import { useComments } from "../../hooks/useComments";
 import { getMovie } from "../../services/movie.service";
+import { 
+    checkFavoriteStatus, 
+    toggleFavorite as toggleFavoriteApi,
+    getPlaylists,
+    createPlaylist,
+    addMovieToPlaylist,
+    removeMovieFromPlaylist
+} from '../../services/interaction.service';
 import { Movie } from "../../types/movie";
 
 type MovieDetailRouteProp = RouteProp<RootStackParamList, "MovieDetail">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-const MOCK_PLAYLISTS: Playlist[] = [
-  { id: '1', name: 'Phim Hành Động', count: 12 },
-  { id: '2', name: 'Xem Sau', count: 5 },
-  { id: '3', name: 'Yêu Thích', count: 28 },
-];
 
 export default function MovieDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -55,8 +57,39 @@ export default function MovieDetailScreen() {
   const [isPlaylistVisible, setPlaylistVisible] = useState(false);
   const [isFavoriteVisible, setFavoriteVisible] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [playlists, setPlaylists] = useState(MOCK_PLAYLISTS);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
+  
+  // Load interaction status
+  useEffect(() => {
+        if (!movieData.id) return;
+
+        const loadData = async () => {
+            try {
+                // Check favorite status
+                const favData = await checkFavoriteStatus(movieData.id.toString());
+                if (favData && typeof favData.isFavorite !== 'undefined') {
+                    setIsFavorite(favData.isFavorite);
+                }
+
+                // Load playlists
+                const playlistsData = await getPlaylists();
+                if (Array.isArray(playlistsData)) {
+                     // Check format from service
+                     const formatted = playlistsData.map((p: any) => ({
+                        id: p.id,
+                        name: p.name,
+                        count: p._count?.playlist_movies || 0
+                    }));
+                    setPlaylists(formatted);
+                }
+            } catch (error) {
+                console.error("Failed to load interaction data:", error);
+            }
+        };
+        
+        loadData();
+    }, [movieData.id]);
   
   // Toast State
   const [toastVisible, setToastVisible] = useState(false);
@@ -91,23 +124,72 @@ export default function MovieDetailScreen() {
     navigation.navigate("WatchMovie", { movie: movieData });
   };
 
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    setFavoriteVisible(true);
-    setTimeout(() => setFavoriteVisible(false), 2000); // Auto hide after 2s
+  const toggleFavorite = async () => {
+    if (!movieData.id) return;
+    try {
+        const newStatus = !isFavorite;
+        setIsFavorite(newStatus);
+        await toggleFavoriteApi(movieData.id.toString());
+        
+        if (newStatus) {
+            setFavoriteVisible(true);
+            setTimeout(() => setFavoriteVisible(false), 2000); 
+        }
+    } catch (error) {
+        console.error("Failed to toggle favorite:", error);
+        setIsFavorite(!isFavorite); // Revert
+    }
   };
 
-  const handleCreatePlaylist = (name: string) => {
-    const newPlaylist = { id: Date.now().toString(), name: name, count: 1 };
-    setPlaylists([...playlists, newPlaylist]);
-    setSelectedPlaylists([...selectedPlaylists, newPlaylist.id]);
+  const handleCreatePlaylist = async (name: string) => {
+    try {
+        const newPlaylist = await createPlaylist(name);
+        const p: Playlist = {
+            id: newPlaylist.id,
+            name: newPlaylist.name,
+            count: 0
+        };
+        setPlaylists([...playlists, p]);
+        // Auto add to new playlist
+        await togglePlaylistSelection(p.id);
+    } catch (error) {
+        console.error("Failed to create playlist:", error);
+    }
   };
 
-  const togglePlaylistSelection = (id: string) => {
-    if (selectedPlaylists.includes(id)) {
-      setSelectedPlaylists(selectedPlaylists.filter(pid => pid !== id));
-    } else {
-      setSelectedPlaylists([...selectedPlaylists, id]);
+  const togglePlaylistSelection = async (id: string) => {
+    if (!movieData.id) return;
+    const isSelected = selectedPlaylists.includes(id);
+    
+    try {
+        // Optimistic update
+        if (isSelected) {
+            setSelectedPlaylists(prev => prev.filter(pid => pid !== id));
+            setPlaylists(prev => prev.map(p => 
+                p.id === id ? { ...p, count: Math.max(0, p.count - 1) } : p
+            ));
+            await removeMovieFromPlaylist(id, movieData.id.toString());
+        } else {
+            setSelectedPlaylists(prev => [...prev, id]);
+            setPlaylists(prev => prev.map(p => 
+                p.id === id ? { ...p, count: p.count + 1 } : p
+            ));
+            await addMovieToPlaylist(id, movieData.id.toString());
+        }
+    } catch (error) {
+        console.error("Failed to update playlist:", error);
+        // Revert
+        if (isSelected) {
+            setSelectedPlaylists(prev => [...prev, id]);
+            setPlaylists(prev => prev.map(p => 
+                p.id === id ? { ...p, count: p.count + 1 } : p
+            ));
+        } else {
+            setSelectedPlaylists(prev => prev.filter(pid => pid !== id));
+            setPlaylists(prev => prev.map(p => 
+                p.id === id ? { ...p, count: Math.max(0, p.count - 1) } : p
+            ));
+        }
     }
   };
 
