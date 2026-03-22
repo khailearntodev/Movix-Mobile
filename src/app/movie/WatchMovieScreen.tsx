@@ -1,93 +1,20 @@
-import React, { useRef, useState, useMemo } from 'react';
-import { View, TouchableOpacity, Text, StatusBar, ScrollView, Image, TextInput, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, FlatList } from 'react-native';
-import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, TouchableOpacity, Text, StatusBar, ScrollView, Image, TextInput, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { ArrowLeft, ThumbsUp, MessageSquare, Share2, Download, Star, Calendar, Clock, ChevronDown, Plus, Heart, X, Check, Copy, Facebook, Instagram, Twitter, Play } from 'lucide-react-native';
-import { Movie } from '../../types/movie';
+import { ArrowLeft, MessageSquare, Share2, Download, Star, Calendar, Clock, Plus, Heart, Play, AlertCircle } from 'lucide-react-native';
+import { Movie, Episode } from '../../types/movie';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { ShareModal } from "../../components/common/ShareModal";
 import { FavoriteToast } from "../../components/common/FavoriteToast";
 import { PlaylistModal, Playlist } from "../../components/movie/PlaylistModal";
+import { getMovie } from '../../services/movie.service';
 
 type WatchMovieRouteProp = RouteProp<RootStackParamList, 'WatchMovie'>;
-
-// Mock Seasons Data
-const MOCK_SEASONS = [
-    {
-        id: 's1',
-        title: 'Mùa 1',
-        episodes: Array.from({ length: 8 }).map((_, i) => ({
-            id: `s1-ep-${i + 1}`,
-            number: i + 1,
-            title: `Tập ${i + 1}: Sự khởi đầu`,
-            image: `https://placehold.co/600x400/1a1a1a/FFF.png?text=S1+EP+${i + 1}`,
-            duration: '45m'
-        }))
-    },
-    {
-        id: 's2',
-        title: 'Mùa 2',
-        episodes: Array.from({ length: 10 }).map((_, i) => ({
-            id: `s2-ep-${i + 1}`,
-            number: i + 1,
-            title: `Tập ${i + 1}: Trỗi dậy`,
-            image: `https://placehold.co/600x400/1a1a1a/FFF.png?text=S2+EP+${i + 1}`,
-            duration: '50m'
-        }))
-    }
-];
-
-// Mock Recommendations
-const MOCK_RECOMMENDATIONS: Movie[] = [
-    { 
-        id: "101", 
-        slug: "avatar-way-of-water",
-        title: "Avatar: The Way of Water", 
-        subTitle: "",
-        posterUrl: "/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg", 
-        backdropUrl: "", 
-        trailerUrl: null,
-        videoUrl: null,
-        tags: ["Sci-Fi", "Advtenture"],
-        vote_average: 7.7, 
-        releaseYear: 2022, 
-        description: "", 
-        type: "MOVIE" 
-    },
-    { 
-        id: "102", 
-        slug: "oppenheimer",
-        title: "Oppenheimer", 
-        subTitle: "",
-        posterUrl: "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg", 
-        backdropUrl: "", 
-        trailerUrl: null,
-        videoUrl: null,
-        tags: ["History", "Drama"],
-        vote_average: 8.1, 
-        releaseYear: 2023, 
-        description: "", 
-        type: "MOVIE" 
-    },
-    { 
-        id: "103", 
-        slug: "interstellar",
-        title: "Interstellar", 
-        subTitle: "",
-        posterUrl: "/gEU2QniL6C971PNLyfeRT389M95.jpg", 
-        backdropUrl: "", 
-        trailerUrl: null,
-        videoUrl: null,
-        tags: ["Sci-Fi", "Drama"],
-        vote_average: 8.4, 
-        releaseYear: 2014, 
-        description: "", 
-        type: "MOVIE" 
-    },
-];
 
 // Mock Playlists
 const MOCK_PLAYLISTS: Playlist[] = [
@@ -98,10 +25,102 @@ const MOCK_PLAYLISTS: Playlist[] = [
 
 export default function WatchMovieScreen() {
     const route = useRoute<WatchMovieRouteProp>();
-    const navigation = useNavigation();
-    const { movie } = route.params;
-    const video = useRef<Video>(null);
-    const [status, setStatus] = useState<AVPlaybackStatus>({} as AVPlaybackStatus);
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const { movie: initialMovie, episodeId: episodeIdFromParam } = route.params;
+    const [movie, setMovie] = useState<Movie>(initialMovie);
+    
+    // Add loading state for video
+    const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [videoError, setVideoError] = useState<string | null>(null);
+
+    // Fetch full movie detail on mount
+    useEffect(() => {
+        const fetchMovieDetail = async () => {
+            try {
+                if (initialMovie.slug) {
+                    const fullMovie = await getMovie(initialMovie.slug);
+                    setMovie(prev => ({ ...prev, ...fullMovie }));
+                }
+            } catch (error) {
+                console.error("Failed to fetch full movie details:", error);
+            }
+        };
+        fetchMovieDetail();
+    }, [initialMovie.slug]);
+
+    // --- Logic from Web: WatchContainer ---
+
+    const findEpisodeById = (id: string | null | undefined) => {
+        if (!id || !movie.seasons) return null;
+        for (const season of movie.seasons) {
+            const ep = season.episodes.find((e) => e.id === id);
+            if (ep) return ep;
+        }
+        return null;
+    };
+
+    const initialEpisode = useMemo(() => {
+        return findEpisodeById(episodeIdFromParam) || movie.seasons?.[0]?.episodes?.[0];
+    }, [episodeIdFromParam, movie.seasons]);
+
+    const [currentEpisode, setCurrentEpisode] = useState<Episode | undefined>(initialEpisode);
+    const [currentVideoUrl, setCurrentVideoUrl] = useState<string>(
+        initialEpisode?.videoUrl || movie.videoUrl || ""
+    );
+
+    // Update state if movie/params change or initialEpisode changes
+    useEffect(() => {
+        if (initialEpisode) {
+            setCurrentEpisode(initialEpisode);
+            const videoSource = initialEpisode.videoUrl || movie.videoUrl || "";
+            setCurrentVideoUrl(videoSource);
+        } else if (movie.videoUrl) {
+            setCurrentVideoUrl(movie.videoUrl);
+            setCurrentEpisode(undefined);
+        }
+    }, [initialEpisode, movie.videoUrl]);
+
+    const handleEpisodeSelect = (episode: Episode) => {
+        setCurrentEpisode(episode);
+        if (episode.videoUrl) {
+            setCurrentVideoUrl(episode.videoUrl);
+        } else if (movie.type === 'MOVIE' && movie.videoUrl) {
+            setCurrentVideoUrl(movie.videoUrl);
+        } else {
+            setCurrentVideoUrl("");
+        }
+    };
+
+    // --- Khởi tạo Video Player bằng link lấy từ API ---
+    // Expo Video sẽ tự động reload lại player khi currentVideoUrl thay đổi (ví dụ: khi chọn tập mới)
+    const player = useVideoPlayer(currentVideoUrl, player => {
+        player.loop = true;
+        player.play();
+    });
+
+    // Theo dõi trạng thái player để hiện loading
+    useEffect(() => {
+        const subscription = player.addListener('statusChange', (payload) => {
+            if (payload.status === 'loading') {
+                setIsVideoLoading(true);
+                setVideoError(null);
+            } else if (payload.status === 'error') {
+                setIsVideoLoading(false);
+                setVideoError(payload.error?.message || "Đã xảy ra lỗi khi tải video");
+            } else {
+                setIsVideoLoading(false);
+                setVideoError(null);
+            }
+        });
+        
+        // Reset loading khi player thay đổi (đổi tập/phim)
+        setIsVideoLoading(true);
+        setVideoError(null);
+
+        return () => {
+            subscription.remove();
+        };
+    }, [player]);
 
     // State for Dialogs
     const [isShareVisible, setShareVisible] = useState(false);
@@ -112,45 +131,55 @@ export default function WatchMovieScreen() {
     const [selectedPlaylists, setSelectedPlaylists] = useState<string[]>([]);
 
     // State for Season Selection
-    const [selectedSeasonId, setSelectedSeasonId] = useState(MOCK_SEASONS[0].id);
+    const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>(() => {
+        if (currentEpisode && movie.seasons) {
+            const season = movie.seasons.find(s => s.episodes.some(e => e.id === currentEpisode.id));
+            if (season) return season.id;
+        }
+        return movie.seasons?.[0]?.id;
+    });
 
-    // Get current episodes based on selection
+    useEffect(() => {
+        if (currentEpisode && movie.seasons) {
+            const season = movie.seasons.find(s => s.episodes.some(e => e.id === currentEpisode.id));
+            if (season && season.id !== selectedSeasonId) {
+                setSelectedSeasonId(season.id);
+            }
+        }
+    }, [currentEpisode, movie.seasons]);
+
     const currentEpisodes = useMemo(() =>
-        MOCK_SEASONS.find(s => s.id === selectedSeasonId)?.episodes || [],
-        [selectedSeasonId]
+        movie.seasons?.find(s => s.id === selectedSeasonId)?.episodes || [],
+        [selectedSeasonId, movie.seasons]
     );
 
     const toggleFavorite = () => {
         setIsFavorite(!isFavorite);
         setFavoriteVisible(true);
-        setTimeout(() => setFavoriteVisible(false), 2000); // Auto hide after 2s
+        setTimeout(() => setFavoriteVisible(false), 2000); 
     };
-    
+
     const handleCreatePlaylist = (name: string) => {
         const newPlaylist = { id: Date.now().toString(), name: name, count: 1 };
         setPlaylists([...playlists, newPlaylist]);
         setSelectedPlaylists([...selectedPlaylists, newPlaylist.id]);
     };
-    
+
     const togglePlaylistSelection = (id: string) => {
         if (selectedPlaylists.includes(id)) {
-          setSelectedPlaylists(selectedPlaylists.filter(pid => pid !== id));
+            setSelectedPlaylists(selectedPlaylists.filter(pid => pid !== id));
         } else {
-          setSelectedPlaylists([...selectedPlaylists, id]);
+            setSelectedPlaylists([...selectedPlaylists, id]);
         }
     };
 
-
-    const videoUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-
-    const getImageUrl = (path: string) =>
-        path?.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
+    const getImageUrl = (path: string | undefined | null) =>
+        path?.startsWith('http') ? path : path ? `https://image.tmdb.org/t/p/w500${path}` : "https://placehold.co/600x400/1a1a1a/FFF.png";
 
     return (
         <SafeAreaView className="flex-1 bg-black" edges={['top', 'left', 'right']}>
             <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-            {/* Header with Back Button (Fixed overlap issue) */}
             <View className="flex-row items-center px-4 py-3 bg-black z-10 border-b border-zinc-800">
                 <TouchableOpacity
                     onPress={() => navigation.goBack()}
@@ -159,22 +188,45 @@ export default function WatchMovieScreen() {
                     <ArrowLeft color="white" size={24} />
                 </TouchableOpacity>
                 <Text className="text-white text-lg font-bold flex-1" numberOfLines={1}>
-                    {movie.title}
+                    {currentEpisode ? `${movie.title} - ${currentEpisode.title}` : movie.title}
                 </Text>
             </View>
 
             {/* Video Player Section */}
-            <View className="w-full h-64 bg-black relative border-b border-zinc-800">
-                <Video
-                    ref={video}
-                    className="w-full h-full"
-                    source={{ uri: videoUrl }}
-                    useNativeControls
-                    resizeMode={ResizeMode.CONTAIN}
-                    isLooping
-                    onPlaybackStatusUpdate={status => setStatus(() => status)}
-                    shouldPlay
+            <View className="w-full h-64 bg-black relative border-b border-zinc-800 justify-center items-center">
+                <VideoView
+                    style={{ width: '100%', height: '100%' }}
+                    player={player}
+                    allowsFullscreen
+                    allowsPictureInPicture
+                    contentFit="contain"
+                    nativeControls={!videoError}
                 />
+                
+                {isVideoLoading && !videoError && (
+                    <View className="absolute inset-0 z-10 justify-center items-center bg-black/50">
+                        <ActivityIndicator size="large" color="#ef4444" />
+                        <Text className="text-white text-xs mt-2 font-medium">Đang tải...</Text>
+                    </View>
+                )}
+
+                {videoError && (
+                    <View className="absolute inset-0 z-20 justify-center items-center bg-black/80 px-4">
+                        <AlertCircle color="#ef4444" size={40} className="mb-2" />
+                        <Text className="text-white text-center font-bold text-lg mb-1">Không thể phát video</Text>
+                        <Text className="text-zinc-400 text-center text-sm mb-4">{videoError}</Text>
+                        <TouchableOpacity 
+                            onPress={() => {
+                                setVideoError(null);
+                                setIsVideoLoading(true);
+                                player.replay();
+                            }}
+                            className="bg-red-600 px-4 py-2 rounded-full"
+                        >
+                            <Text className="text-white font-medium text-sm">Thử lại</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -185,7 +237,7 @@ export default function WatchMovieScreen() {
                     <View className="flex-row items-center mb-5 space-x-3 gap-2">
                         <View className="flex-row items-center bg-zinc-800/60 px-2.5 py-1.5 rounded-md space-x-1.5 gap-1.5">
                             <Star size={14} color="#fbbf24" fill="#fbbf24" />
-                            <Text className="text-zinc-200 text-xs font-semibold">{(movie.vote_average || 0).toFixed(1)}</Text>
+                            <Text className="text-zinc-200 text-xs font-semibold">{(movie.rating || movie.vote_average || 0).toFixed(1)}</Text>
                         </View>
                         <View className="flex-row items-center bg-zinc-800/60 px-2.5 py-1.5 rounded-md space-x-1.5 gap-1.5">
                             <Calendar size={14} color="#a1a1aa" />
@@ -193,21 +245,21 @@ export default function WatchMovieScreen() {
                         </View>
                         <View className="flex-row items-center bg-zinc-800/60 px-2.5 py-1.5 rounded-md space-x-1.5 gap-1.5">
                             <Clock size={14} color="#a1a1aa" />
-                            <Text className="text-zinc-200 text-xs font-semibold">120 phút</Text>
+                            <Text className="text-zinc-200 text-xs font-semibold">{currentEpisode ? `${currentEpisode.runtime} phút` : movie.duration || "N/A"}</Text>
                         </View>
                         <View className="flex-row items-center bg-zinc-800/60 px-2.5 py-1.5 rounded-md">
-                            <Text className="text-zinc-200 text-xs font-semibold">HD</Text>
+                            <Text className="text-zinc-200 text-xs font-semibold">{movie.type === 'TV' ? 'Series' : 'Movie'}</Text>
                         </View>
                     </View>
 
                     {/* Actions */}
                     <View className="flex-row justify-around mb-6 bg-zinc-900 py-3.5 rounded-xl">
                         <TouchableOpacity onPress={toggleFavorite} className="items-center flex-row space-x-2 gap-2">
-                             <Heart color={isFavorite ? "#ef4444" : "white"} fill={isFavorite ? "#ef4444" : "transparent"} size={20} />
+                            <Heart color={isFavorite ? "#ef4444" : "white"} fill={isFavorite ? "#ef4444" : "transparent"} size={20} />
                             <Text className={`text-sm font-medium ${isFavorite ? 'text-red-500' : 'text-white'}`}>Thích</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setPlaylistVisible(true)} className="items-center flex-row space-x-2 gap-2">
-                             <Plus color="white" size={20} />
+                            <Plus color="white" size={20} />
                             <Text className="text-white text-sm font-medium">Danh sách</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setShareVisible(true)} className="items-center flex-row space-x-2 gap-2">
@@ -221,88 +273,112 @@ export default function WatchMovieScreen() {
                     </View>
 
                     <Text className="text-zinc-400 text-[15px] leading-6 mb-2" numberOfLines={3}>
-                        {movie.description || "Mô tả phim chưa cập nhật. Một bộ phim hấp dẫn đang chờ bạn khám phá..."}
+                        {movie.description || "Mô tả phim chưa cập nhật..."}
                     </Text>
                 </View>
 
                 {/* 2. Season & Episodes Section */}
-                <View className="mt-6 px-4">
-                    <View className="flex-row items-center mb-4">
-                        <View className="w-1 h-6 bg-red-600 rounded-sm mr-2.5" />
-                        <Text className="text-white text-xl font-bold">Danh sách tập</Text>
+                {movie.seasons && movie.seasons.length > 0 && (
+                    <View className="mt-6 px-4">
+                        <View className="flex-row items-center mb-4">
+                            <View className="w-1 h-6 bg-red-600 rounded-sm mr-2.5" />
+                            <Text className="text-white text-xl font-bold">Danh sách tập</Text>
+                        </View>
+
+                        {/* Season Selector */}
+                        {movie.seasons.length > 1 && (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 flex-row">
+                                {movie.seasons.map(season => (
+                                    <TouchableOpacity
+                                        key={season.id}
+                                        className={clsx(
+                                            "px-4 py-2 rounded-full mr-3 border",
+                                            selectedSeasonId === season.id
+                                                ? "bg-red-600 border-red-600"
+                                                : "bg-zinc-800 border-zinc-700"
+                                        )}
+                                        onPress={() => setSelectedSeasonId(season.id)}
+                                    >
+                                        <Text className={clsx(
+                                            "font-semibold text-sm",
+                                            selectedSeasonId === season.id ? "text-white" : "text-zinc-400"
+                                        )}>
+                                            {season.title}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        )}
+
+                        {/* Episode List */}
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
+                            {currentEpisodes.map((ep) => (
+                                <TouchableOpacity
+                                    key={ep.id}
+                                    className="mr-4 w-44"
+                                    onPress={() => handleEpisodeSelect(ep)}
+                                >
+                                    <View className={clsx(
+                                        "w-44 h-24 rounded-lg bg-zinc-800 mb-2 relative overflow-hidden border",
+                                        currentEpisode?.id === ep.id ? "border-red-600" : "border-zinc-800"
+                                    )}>
+                                        <Image
+                                            source={{ uri: getImageUrl(ep.videoImageUrl || movie.posterUrl) }}
+                                            className="w-full h-full"
+                                            resizeMode="cover"
+                                        />
+                                        <View className="absolute top-2 right-2 bg-black/80 px-1.5 py-0.5 rounded">
+                                            <Text className="text-white text-[10px] font-bold">{ep.runtime}m</Text>
+                                        </View>
+                                        {currentEpisode?.id === ep.id && (
+                                            <View className="absolute top-2 left-2 bg-red-600 px-2 py-0.5 rounded">
+                                                <Text className="text-white text-[10px] font-bold">Đang phát</Text>
+                                            </View>
+                                        )}
+
+                                        <View className="absolute inset-0 items-center justify-center">
+                                            {currentEpisode?.id !== ep.id && (
+                                                <View className="bg-black/30 rounded-full p-1 backdrop-blur-sm">
+                                                    <Play size={20} color="white" fill="white" />
+                                                </View>
+                                            )}
+                                        </View>
+                                    </View>
+                                    <Text
+                                        className={clsx("text-sm font-medium", currentEpisode?.id === ep.id ? "text-red-500" : "text-zinc-200")}
+                                        numberOfLines={1}
+                                    >
+                                        {ep.title}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
-
-                    {/* Season Selector */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4 flex-row">
-                        {MOCK_SEASONS.map(season => (
-                            <TouchableOpacity
-                                key={season.id}
-                                className={clsx(
-                                    "px-4 py-2 rounded-full mr-3 border",
-                                    selectedSeasonId === season.id
-                                        ? "bg-red-600 border-red-600"
-                                        : "bg-zinc-800 border-zinc-700"
-                                )}
-                                onPress={() => setSelectedSeasonId(season.id)}
-                            >
-                                <Text className={clsx(
-                                    "font-semibold text-sm",
-                                    selectedSeasonId === season.id ? "text-white" : "text-zinc-400"
-                                )}>
-                                    {season.title}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-
-                    {/* Episode List */}
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
-                        {currentEpisodes.map((ep) => (
-                            <TouchableOpacity key={ep.id} className="mr-4 w-44">
-                                <View className="w-44 h-24 rounded-lg bg-zinc-800 mb-2 relative overflow-hidden border border-zinc-800">
-                                    <Image source={{ uri: ep.image }} className="w-full h-full" resizeMode="cover" />
-                                    <View className="absolute top-2 right-2 bg-black/80 px-1.5 py-0.5 rounded">
-                                        <Text className="text-white text-[10px] font-bold">{ep.duration}</Text>
-                                    </View>
-                                    {ep.number === 1 && selectedSeasonId === 's1' && (
-                                        <View className="absolute top-2 left-2 bg-red-600 px-2 py-0.5 rounded">
-                                            <Text className="text-white text-[10px] font-bold">Đang phát</Text>
-                                        </View>
-                                    )}
-                                    {/* Center Play Icon Overlay */}
-                                    <View className="absolute inset-0 items-center justify-center">
-                                        <View className="bg-black/30 rounded-full p-1 backdrop-blur-sm">
-                                            {/* Optional: Add small play icon if desired */}
-                                        </View>
-                                    </View>
-                                </View>
-                                <Text className="text-zinc-200 text-sm font-medium" numberOfLines={1}>{ep.title}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
+                )}
 
                 {/* 3. Recommendations Section */}
-                <View className="mt-8 px-4">
-                    <View className="flex-row items-center mb-4">
-                        <View className="w-1 h-6 bg-red-600 rounded-sm mr-2.5" />
-                        <Text className="text-white text-xl font-bold">Đề xuất cho bạn</Text>
+                {movie.recommendations && movie.recommendations.length > 0 && (
+                    <View className="mt-8 px-4">
+                        <View className="flex-row items-center mb-4">
+                            <View className="w-1 h-6 bg-red-600 rounded-sm mr-2.5" />
+                            <Text className="text-white text-xl font-bold">Đề xuất cho bạn</Text>
+                        </View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
+                            {movie.recommendations.map((item) => (
+                                <TouchableOpacity
+                                    key={item.id}
+                                    className="mr-4 w-32"
+                                    onPress={() => navigation.push('WatchMovie', { movie: item })}
+                                >
+                                    <View className="w-32 h-48 rounded-lg bg-zinc-800 mb-2 overflow-hidden border border-zinc-800">
+                                        <Image source={{ uri: getImageUrl(item.posterUrl) }} className="w-full h-full" resizeMode="cover" />
+                                    </View>
+                                    <Text className="text-zinc-200 text-sm font-medium text-center" numberOfLines={1}>{item.title}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
                     </View>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
-                        {MOCK_RECOMMENDATIONS.map((item) => (
-                            <TouchableOpacity
-                                key={item.id}
-                                className="mr-4 w-32"
-                                onPress={() => (navigation.navigate as any)('WatchMovie', { movie: item })}
-                            >
-                                <View className="w-32 h-48 rounded-lg bg-zinc-800 mb-2 overflow-hidden border border-zinc-800">
-                                    <Image source={{ uri: getImageUrl(item.posterUrl) }} className="w-full h-full" resizeMode="cover" />
-                                </View>
-                                <Text className="text-zinc-200 text-sm font-medium text-center" numberOfLines={1}>{item.title}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
+                )}
 
                 {/* 4. Comments Section Placeholder */}
                 <View className="mt-8 px-4 mb-10">
@@ -328,12 +404,12 @@ export default function WatchMovieScreen() {
             </ScrollView>
 
             {/* Components */}
-            <ShareModal 
-                visible={isShareVisible} 
-                onClose={() => setShareVisible(false)} 
+            <ShareModal
+                visible={isShareVisible}
+                onClose={() => setShareVisible(false)}
             />
 
-            <PlaylistModal 
+            <PlaylistModal
                 visible={isPlaylistVisible}
                 onClose={() => setPlaylistVisible(false)}
                 playlists={playlists}
