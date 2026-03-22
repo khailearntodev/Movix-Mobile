@@ -33,7 +33,7 @@ export const toggleFavorite = async (movieId: string) => {
 };
 
 export const checkFavoriteStatus = async (movieId: string) => {
-  const response = await api.post('/interact/favorite/status', {
+  const response = await api.get('/interact/favorite/status', {
     params: { movieId },
   });
   return response.data; 
