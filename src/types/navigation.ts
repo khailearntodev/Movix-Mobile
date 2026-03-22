@@ -14,6 +14,7 @@ export type RootStackParamList = {
   WatchParty: undefined;
   WatchPartyRoom: { roomId: string };
   Playlist: undefined;
+  PlaylistDetail: { playlistId: string; title: string };
   Favorites: undefined;
   History: undefined;
   EditProfile: undefined;
