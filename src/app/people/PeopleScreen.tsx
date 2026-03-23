@@ -75,7 +75,7 @@ const PeopleScreen = () => {
 
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 border-b border-neutral-800">
-        <Text className="text-white text-lg font-bold">Nghệ sĩ</Text>
+        <Text className="text-white text-xl font-bold">Nghệ sĩ</Text>
       </View>
 
       {/* Filters */}
