@@ -115,6 +115,7 @@ function mapToMovie(raw: any): Movie {
     tags,
 
     rating,
+    vote_average: rating,
     duration,
     views: raw.view_count ?? raw.metadata?.view_count ?? raw.views ?? 0,
     comment_count: raw.comment_count || 0,
@@ -194,3 +195,71 @@ export async function getDynamicSections(): Promise<MovieSection[]> {
     return [];
   }
 }
+
+export async function filterMovies(params: any): Promise<{ movies: Movie[], pagination: any }> {
+  try {
+    const { data } = await api.get('/movies/filter', { params });
+    const mappedMovies = (data.data || []).map(mapToMovie);
+    return { movies: mappedMovies, pagination: data.pagination };
+  } catch (error) {
+    console.error("Lỗi filter phim:", error);
+    return { movies: [], pagination: {} };
+  }
+}
+
+export async function submitVoiceAiSearch(audioUri: string): Promise<{ movies: Movie[], recognizedText?: string }> {
+  const formData = new FormData();
+  formData.append('audio', {
+    uri: audioUri,
+    type: 'audio/m4a',
+    name: 'voice_query.m4a',
+  } as any);
+
+  try {
+    const { data } = await api.post('/ai/search-voice', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+    });
+    const responseData = data;
+    const moviesData = Array.isArray(responseData) ? responseData : responseData.data || [];
+    return {
+      movies: moviesData.map(mapToMovie),
+      recognizedText: responseData.recognizedText
+    };
+  } catch (error: any) {
+    console.error("Lỗi AI Voice:", error?.response?.data || error.message);
+    throw new Error('Lỗi phân tích giọng nói');
+  }
+}
+
+export async function submitImageAiSearch(imageUri: string, mimeType: string = 'image/jpeg'): Promise<Movie[]> {
+  const formData = new FormData();
+  formData.append('image', {
+    uri: imageUri,
+    type: mimeType,
+    name: 'search_image.jpg',
+  } as any);
+
+  try {
+    const { data } = await api.post('/ai/search-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000,
+    });
+    const results = Array.isArray(data) ? data : data.data || [];
+    return results.map(mapToMovie);
+  } catch (error: any) {
+    console.error("Lỗi AI Image:", error?.response?.data || error.message);
+    throw new Error('Lỗi tìm kiếm hình ảnh');
+  }
+}
+
+export async function submitTextAiSearch(query: string): Promise<Movie[]> {
+  try {
+    const { data } = await api.post('/ai/search', { query }, { timeout: 120000 });
+    return (data || []).map(mapToMovie);
+  } catch (error: any) {
+    console.error("Lỗi AI Text:", error?.response?.data || error.message);
+    throw new Error('Lỗi tìm kiếm AI Text');
+  }
+}
+

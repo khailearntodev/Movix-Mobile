@@ -1,23 +1,15 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Search, Users, Video, User, Bell } from 'lucide-react-native';
+import { Home, Search, Users, Video, User } from 'lucide-react-native';
 import HomeScreen from '../app/home/HomeScreen';
 import PeopleScreen from '../app/people/PeopleScreen';
-import SearchPage from '../app/search/page';
-import WatchPartyScreen from '../app/watch-party/page';
+import SearchScreen from '../app/search/SearchScreen';
+import WatchPartyScreen from '../app/watch-party/WatchPartyScreen';
 import ProfileStackNavigator from './ProfileStackNavigator';
 import { View, Text, Platform } from 'react-native';
 import { useGlobalNotifications } from '../contexts/NotificationContext';
 
-
 const Tab = createBottomTabNavigator();
-
-// Placeholder Profile Screen
-const ProfileScreen = () => (
-    <View className="flex-1 bg-black justify-center items-center">
-        <Text className="text-white text-xl">Profile Screen</Text>
-    </View>
-);
 
 export default function MainTabNavigator() {
   const notificationContext = useGlobalNotifications();
@@ -40,7 +32,7 @@ export default function MainTabNavigator() {
       }}
     >
       <Tab.Screen 
-        name="HomeTab" 
+        name="Home" 
         component={HomeScreen} 
         options={{
             tabBarLabel: 'Trang chủ',
@@ -48,7 +40,7 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="PeopleTab" 
+        name="People" 
         component={PeopleScreen} 
         options={{
             tabBarLabel: 'Nghệ sĩ',
@@ -56,15 +48,15 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="SearchTab" 
-        component={SearchPage} 
+        name="Search" 
+        component={SearchScreen} 
         options={{
             tabBarLabel: 'Tìm kiếm',
             tabBarIcon: ({ color }) => <Search color={color} size={24} />
         }}
       />
       <Tab.Screen 
-        name="WatchPartyTab" 
+        name="WatchParty" 
         component={WatchPartyScreen} 
         options={{
             tabBarLabel: 'Xem chung',
@@ -72,7 +64,7 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="ProfileTab" 
+        name="Profile" 
         component={ProfileStackNavigator} 
         options={{
             tabBarLabel: 'Cá nhân',

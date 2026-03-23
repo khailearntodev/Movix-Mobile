@@ -5,16 +5,16 @@ import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from './src/contexts/AuthContext';
 import { NotificationProvider } from './src/contexts/NotificationContext';
 import "./global.css";
-import LoginPage from "./src/app/(auth)/login/page";
-import RegisterPage from "./src/app/(auth)/register/page";
-import ForgotPasswordPage from "./src/app/(auth)/forgot-password/page";
-import ResetPasswordPage from "./src/app/(auth)/reset-password/page";
+import LoginPage from "./src/app/(auth)/login/LoginScreen";
+import RegisterPage from "./src/app/(auth)/register/RegisterScreen";
+import ForgotPasswordPage from "./src/app/(auth)/forgot-password/ForgotPasswordScreen";
+import ResetPasswordPage from "./src/app/(auth)/reset-password/ResetPasswordScreen";
 import RemoteScreen from "./src/app/remote/RemoteScreen";
-import WelcomePage from "./src/app/welcome/page";
+import WelcomePage from "./src/app/welcome/WelcomeScreen";
 
-import FilterPage from "./src/app/search/filter";
-import SearchPage from "./src/app/search/page";
-import WatchPartyScreen from "./src/app/watch-party/page";
+import FilterPage from "./src/app/search/FilterScreen";
+import SearchPage from "./src/app/search/SearchScreen";
+import WatchPartyScreen from "./src/app/watch-party/WatchPartyScreen";
 import WatchPartyRoom from "./src/app/watch-party/WatchPartyRoom";
 import MainTabNavigator from "./src/navigation/MainTabNavigator";
 import MovieDetailScreen from "./src/app/movie/MovieDetailScreen";
@@ -36,19 +36,20 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <AuthProvider>
+    <AuthProvider>
+        <NavigationContainer>
         <NotificationProvider >
-          <Stack.Navigator
-            initialRouteName="Welcome"
-            screenOptions={{ headerShown: false }}
-          >
-            <Stack.Screen name="Welcome" component={WelcomePage} />
-            {/* Auth Group */}
-            <Stack.Screen name="Login" component={LoginPage} />
-            <Stack.Screen name="Register" component={RegisterPage} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
+            <Stack.Navigator
+                initialRouteName="Welcome"
+                screenOptions={{ headerShown: false }}
+            >
+                <Stack.Screen name="Welcome" component={WelcomePage} />
+                
+                {/* Auth Group */}
+                <Stack.Screen name="Login" component={LoginPage} />
+                <Stack.Screen name="Register" component={RegisterPage} />
+                <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
+                <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
 
             {/* Main App Group */}
             <Stack.Screen
@@ -82,8 +83,8 @@ export default function App() {
           </Stack.Navigator>
         </NotificationProvider>
         <Toast />
-      </AuthProvider>
       <StatusBar style="light" />
     </NavigationContainer>
+    </AuthProvider>
   );
 }

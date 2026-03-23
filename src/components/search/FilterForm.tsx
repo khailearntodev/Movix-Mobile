@@ -1,251 +1,228 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Platform } from 'react-native';
-import { X, RotateCcw, Check, Star, Calendar } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Platform, ActivityIndicator } from 'react-native';
+import { X, RotateCcw, Check, Calendar, Film, Globe, Tag, Shield } from 'lucide-react-native';
+import api from '../../services/api';
 
-// --- DỮ LIỆU GIẢ LẬP (MOCK DATA) ---
-// Sau này bạn có thể thay thế bằng dữ liệu lấy từ API
-const SORT_OPTIONS = [ // Các tùy chọn sắp xếp
-    { id: 'popularity.desc', label: 'Phổ biến nhất' },
-    { id: 'vote_average.desc', label: 'Đánh giá cao' },
-    { id: 'release_date.desc', label: 'Mới nhất' },
-    { id: 'revenue.desc', label: 'Doanh thu' },
+const TYPES = [
+    { id: 'all', label: 'Tất cả' },
+    { id: 'phim-le', label: 'Phim lẻ' },
+    { id: 'phim-bo', label: 'Phim bộ' },
 ];
 
-const GENRES = [ // Danh sách thể loại phim
-    { id: 28, name: "Hành động" },
-    { id: 12, name: "Phiêu lưu" },
-    { id: 16, name: "Hoạt hình" },
-    { id: 35, name: "Hài" },
-    { id: 80, name: "Tội phạm" },
-    { id: 18, name: "Tâm lý" },
-    { id: 10751, name: "Gia đình" },
-    { id: 14, name: "Giả tưởng" },
-    { id: 36, name: "Lịch sử" },
-    { id: 27, name: "Kinh dị" },
-    { id: 10402, name: "Âm nhạc" },
-    { id: 9648, name: "Bí ẩn" },
-    { id: 10749, name: "Lãng mạn" },
-    { id: 878, name: "Khoa học viễn tưởng" },
-    { id: 10770, name: "Phim truyền hình" },
-    { id: 53, name: "Gây cấn" },
-    { id: 10752, name: "Chiến tranh" },
-    { id: 37, name: "Miền Tây" },
-];
+const RATINGS = ['Tất cả', 'K (Dưới 13 tuổi)', 'T13', 'T16', 'T18'];
 
-const REGIONS = [ // Danh sách quốc gia sản xuất
-    { id: 'all', name: "Tất cả" },
-    { id: 'US', name: "Âu Mỹ" },
-    { id: 'VN', name: "Việt Nam" },
-    { id: 'KR', name: "Hàn Quốc" },
-    { id: 'CN', name: "Trung Quốc" },
-    { id: 'JP', name: "Nhật Bản" },
-];
+const YEARS = ['Tất cả', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016'];
 
-// --- ĐỊNH NGHĨA KIỂU DỮ LIỆU (INTERFACES) ---
-// Kiểu dữ liệu cho bộ lọc
 export interface FilterValues {
-    sort_by: string;          // Sắp xếp theo (ví dụ: 'popularity.desc')
-    with_genres: number[];    // Mảng chứa ID các thể loại đã chọn
-    region: string;           // Mã quốc gia
-    year_min: string;         // Năm bắt đầu
-    year_max: string;         // Năm kết thúc
-    vote_average_gte: number; // Điểm đánh giá tối thiểu (Greater Than or Equal)
+    with_genres: string[];
+    region: string;
+    type: string;
+    rating: string;
+    year: string;
 }
 
-// Props (tham số đầu vào) cho Component FilterForm
 interface FilterFormProps {
-    initialValues?: Partial<FilterValues>; // Giá trị khởi tạo (tùy chọn)
-    onApply: (values: FilterValues) => void; // Hàm callback khi nhấn "Áp dụng"
-    onClose: () => void; // Hàm callback khi nhấn nút đóng "X"
+    initialValues?: Partial<FilterValues>;
+    onApply: (values: FilterValues) => void;
+    onClose: () => void;
 }
 
-// Giá trị mặc định ban đầu của bộ lọc
 const DEFAULT_FILTERS: FilterValues = {
-    sort_by: 'popularity.desc',
     with_genres: [],
-    region: 'all',
-    year_min: '',
-    year_max: '',
-    vote_average_gte: 0,
+    region: 'Tất cả',
+    type: 'all',
+    rating: 'Tất cả',
+    year: 'Tất cả',
 };
 
 export default function FilterForm({ initialValues, onApply, onClose }: FilterFormProps) {
-    // Khởi tạo state filters với giá trị mặc định hoặc giá trị truyền vào
     const [filters, setFilters] = useState<FilterValues>({ ...DEFAULT_FILTERS, ...initialValues });
+    const [genres, setGenres] = useState<{ id: string; name: string }[]>([]);
+    const [countries, setCountries] = useState<{ id: string; name: string }[]>([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+    const [customYear, setCustomYear] = useState('');
 
-    // --- CÁC HÀM XỬ LÝ (HANDLERS) ---
+    useEffect(() => {
+        const fetchFilterData = async () => {
+            try {
+                const [genresRes, countriesRes] = await Promise.all([
+                    api.get("/movies/genres"),
+                    api.get("/movies/countries"),
+                ]);
+                setGenres((genresRes.data || []).map((g: any) => ({ id: g.id, name: g.name })));
+                const mapped = (countriesRes.data || [])
+                    .filter((c: any) => c.name)
+                    .map((c: any) => ({ id: c.id, name: c.name }));
+                setCountries(mapped);
+            } catch (err) {
+                console.error("Lỗi khi tải dữ liệu filter:", err);
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+        fetchFilterData();
+    }, []);
 
-    // Hàm chọn/bỏ chọn thể loại (Multi-select logic)
-    const toggleGenre = (id: number) => {
+    const toggleGenre = (name: string) => {
+        if (name === 'Tất cả') {
+            setFilters(prev => ({ ...prev, with_genres: [] }));
+            return;
+        }
         setFilters(prev => {
             const current = prev.with_genres;
-            if (current.includes(id)) {
-                // Nếu đã có -> Loại bỏ khỏi mảng
-                return { ...prev, with_genres: current.filter(g => g !== id) };
-            } else {
-                // Nếu chưa có -> Thêm vào mảng
-                return { ...prev, with_genres: [...current, id] };
+            if (current.includes(name)) {
+                return { ...prev, with_genres: current.filter(g => g !== name) };
             }
+            return { ...prev, with_genres: [...current, name] };
         });
     };
 
-    // Hàm đặt lại bộ lọc về mặc định
     const handleReset = () => {
         setFilters(DEFAULT_FILTERS);
+        setCustomYear('');
     };
 
-    // Component phụ để render tiêu đề cho mỗi phần (Section Title)
+    const handleYearInput = (value: string) => {
+        setCustomYear(value);
+        if (value.trim().length === 4) {
+            setFilters(prev => ({ ...prev, year: value.trim() }));
+        } else if (value.trim() === '') {
+            setFilters(prev => ({ ...prev, year: 'Tất cả' }));
+        }
+    };
+
     const renderSectionTitle = (title: string, icon?: React.ReactNode) => (
         <View className="flex-row items-center mb-3 mt-6">
             {icon && <View className="mr-2">{icon}</View>}
-            <Text className="text-white text-lg font-bold uppercase tracking-wider">{title}</Text>
+            <Text className="text-white text-base font-bold">{title}</Text>
         </View>
+    );
+
+    const renderChip = (
+        label: string,
+        isSelected: boolean,
+        onPress: () => void,
+        style?: 'pill' | 'block'
+    ) => (
+        <TouchableOpacity
+            onPress={onPress}
+            className={`px-3 py-2 rounded-full border ${
+                isSelected
+                    ? 'border-green-600 bg-green-600/10'
+                    : 'bg-zinc-900 border-zinc-800'
+            } ${style === 'block' ? 'flex-1 items-center' : ''}`}
+        >
+            <Text className={`text-sm ${isSelected ? 'text-green-400 font-bold' : 'text-zinc-400'}`}>
+                {label}
+            </Text>
+        </TouchableOpacity>
     );
 
     return (
         <View className="flex-1 bg-zinc-950">
-            {/* --- HEADER (PHẦN ĐẦU TRANG) --- */}
-            {/* Kiểm tra hệ điều hành để chỉnh padding top cho phù hợp với tai thỏ iPhone */}
             <View className={`flex-row justify-between items-center px-4 border-b border-zinc-800 ${Platform.OS === 'ios' ? 'pt-12 pb-4' : 'pv-4 h-16'}`}>
-                {/* Nút đóng (X) */}
                 <TouchableOpacity onPress={onClose} className="p-2 -ml-2">
                     <X size={24} color="#d4d4d8" />
                 </TouchableOpacity>
-
-                {/* Tiêu đề */}
                 <Text className="text-white text-xl font-bold">Bộ lọc phim</Text>
-
-                {/* Nút đặt lại (Reset) */}
                 <TouchableOpacity onPress={handleReset} className="p-2 -mr-2">
                     <RotateCcw size={20} color="#ef4444" />
                 </TouchableOpacity>
             </View>
 
-            {/* --- BODY (PHẦN NỘI DUNG CHÍNH - CÓ THỂ CUỘN) --- */}
             <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
 
-                {/* 1. SẮP XẾP THEO */}
-                {renderSectionTitle("Sắp xếp theo")}
-                <View className="flex-row flex-wrap gap-3">
-                    {SORT_OPTIONS.map(opt => {
-                        const isSelected = filters.sort_by === opt.id; // Kiểm tra xem option này có đang được chọn không
-                        return (
-                            <TouchableOpacity
-                                key={opt.id}
-                                onPress={() => setFilters({ ...filters, sort_by: opt.id })}
-                                // Đổi màu nền và viền nếu đang được chọn (Selected state logic)
-                                className={`px-4 py-2 rounded-full border ${isSelected ? 'bg-red-600 border-red-600' : 'bg-zinc-900 border-zinc-700'}`}
-                            >
-                                <Text className={`${isSelected ? 'text-white font-bold' : 'text-zinc-400'}`}>
-                                    {opt.label}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-
-                {/* 2. THỂ LOẠI (CHỌN NHIỀU) */}
-                {renderSectionTitle("Thể loại")}
-                <View className="flex-row flex-wrap gap-2">
-                    {GENRES.map(genre => {
-                        const isSelected = filters.with_genres.includes(genre.id);
-                        return (
-                            <TouchableOpacity
-                                key={genre.id}
-                                onPress={() => toggleGenre(genre.id)}
-                                // Style: Nếu chọn thì viền đỏ + nền đỏ nhạt. Nếu không thì màu tối.
-                                className={`px-3 py-2 rounded-lg border ${isSelected ? 'bg-red-600/20 border-red-600' : 'bg-zinc-900 border-zinc-800'}`}
-                            >
-                                <Text className={`${isSelected ? 'text-red-500 font-semibold' : 'text-zinc-400'}`}>
-                                    {genre.name}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </View>
-
-                {/* 3. QUỐC GIA (SCROLL NGANG) */}
-                {renderSectionTitle("Quốc gia")}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-                    {REGIONS.map(region => {
-                        const isSelected = filters.region === region.id;
-                        return (
-                            <TouchableOpacity
-                                key={region.id}
-                                onPress={() => setFilters({ ...filters, region: region.id })}
-                                // Style: Nếu chọn thì nền trắng chữ đen nổi bật
-                                className={`mr-3 px-4 py-3 rounded-xl border items-center justify-center min-w-[80px] ${isSelected ? 'bg-white border-white' : 'bg-zinc-900 border-zinc-800'}`}
-                            >
-                                <Text className={`${isSelected ? 'text-black font-bold' : 'text-zinc-400'}`}>
-                                    {region.name}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
-
-                {/* 4. NĂM PHÁT HÀNH & KHOẢNG THỜI GIAN */}
-                <View className="flex-row gap-4 mt-2">
-                    <View className="flex-1">
-                        {renderSectionTitle("Năm phát hành", <Calendar size={18} color="#ef4444" />)}
-                        <View className="flex-row items-center gap-2">
-                            {/* Input Năm Từ (Min Year) */}
-                            <TextInput
-                                className="flex-1 bg-zinc-900 text-white p-3 rounded-lg border border-zinc-700 text-center"
-                                placeholder="Từ"
-                                placeholderTextColor="#52525b"
-                                keyboardType="numeric"
-                                value={filters.year_min}
-                                onChangeText={t => setFilters({ ...filters, year_min: t })}
-                                maxLength={4}
-                            />
-                            <Text className="text-zinc-500">-</Text>
-                            {/* Input Năm Đến (Max Year) */}
-                            <TextInput
-                                className="flex-1 bg-zinc-900 text-white p-3 rounded-lg border border-zinc-700 text-center"
-                                placeholder="Đến"
-                                placeholderTextColor="#52525b"
-                                keyboardType="numeric"
-                                value={filters.year_max}
-                                onChangeText={t => setFilters({ ...filters, year_max: t })}
-                                maxLength={4}
-                            />
-                        </View>
+                {renderSectionTitle("Quốc gia", <Globe size={18} color="#ef4444" />)}
+                {isLoadingData ? (
+                    <ActivityIndicator size="small" color="#ef4444" className="self-start" />
+                ) : (
+                    <View className="flex-row flex-wrap gap-2">
+                        {renderChip('Tất cả', filters.region === 'Tất cả', () => setFilters({ ...filters, region: 'Tất cả' }))}
+                        {countries.map(c => (
+                            <View key={c.id}>
+                                {renderChip(c.name, filters.region === c.name, () => setFilters({ ...filters, region: c.name }))}
+                            </View>
+                        ))}
                     </View>
+                )}
+
+                {renderSectionTitle("Loại phim", <Film size={18} color="#ef4444" />)}
+                <View className="flex-row gap-3">
+                    {TYPES.map(opt => (
+                        <TouchableOpacity
+                            key={opt.id}
+                            onPress={() => setFilters({ ...filters, type: opt.id })}
+                            className={`flex-1 items-center px-4 py-3 rounded-xl border ${
+                                filters.type === opt.id
+                                    ? 'border-green-600 bg-green-600/10'
+                                    : 'bg-zinc-900 border-zinc-800'
+                            }`}
+                        >
+                            <Text className={`${filters.type === opt.id ? 'text-green-400 font-bold' : 'text-zinc-400'}`}>
+                                {opt.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
                 </View>
 
-                {/* 5. ĐIỂM ĐÁNH GIÁ (RATING) */}
-                {renderSectionTitle("Điểm tối thiểu", <Star size={18} color="#eab308" />)}
-                <View className="flex-row justify-between mb-8 bg-zinc-900 p-1 rounded-xl">
-                    {/* Các mức điểm: 0 (Tất cả), 5+, 6+... */}
-                    {[0, 5, 6, 7, 8, 9].map(score => {
-                        const isSelected = filters.vote_average_gte === score;
-                        return (
-                            <TouchableOpacity
-                                key={score}
-                                onPress={() => setFilters({ ...filters, vote_average_gte: score })}
-                                className={`flex-1 items-center py-3 rounded-lg ${isSelected ? 'bg-yellow-600' : 'bg-transparent'}`}
-                            >
-                                <Text className={`font-bold ${isSelected ? 'text-white' : 'text-zinc-500'}`}>
-                                    {score > 0 ? `${score}+` : 'All'}
-                                </Text>
-                            </TouchableOpacity>
-                        )
-                    })}
+                {renderSectionTitle("Xếp hạng", <Shield size={18} color="#ef4444" />)}
+                <View className="flex-row flex-wrap gap-2">
+                    {RATINGS.map(r => (
+                        <View key={r}>
+                            {renderChip(r, filters.rating === r, () => setFilters({ ...filters, rating: r }))}
+                        </View>
+                    ))}
                 </View>
 
-                {/* Khoảng trống đệm dưới cùng để nội dung không bị che bởi nút Áp dụng */}
+                {renderSectionTitle("Thể loại", <Tag size={18} color="#ef4444" />)}
+                {isLoadingData ? (
+                    <ActivityIndicator size="small" color="#ef4444" className="self-start" />
+                ) : (
+                    <View className="flex-row flex-wrap gap-2">
+                        {renderChip('Tất cả', filters.with_genres.length === 0, () => toggleGenre('Tất cả'))}
+                        {genres.map(genre => (
+                            <View key={genre.id}>
+                                {renderChip(
+                                    genre.name,
+                                    filters.with_genres.includes(genre.name),
+                                    () => toggleGenre(genre.name)
+                                )}
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {renderSectionTitle("Năm sản xuất", <Calendar size={18} color="#ef4444" />)}
+                <View className="flex-row flex-wrap gap-2">
+                    {YEARS.map(y => (
+                        <View key={y}>
+                            {renderChip(y, filters.year === y, () => {
+                                setFilters({ ...filters, year: y });
+                                setCustomYear('');
+                            })}
+                        </View>
+                    ))}
+                    <TextInput
+                        className="bg-zinc-900 text-white px-3 py-2 rounded-full border border-zinc-800 w-28 text-center text-sm"
+                        placeholder="Nhập năm..."
+                        placeholderTextColor="#52525b"
+                        keyboardType="numeric"
+                        value={customYear}
+                        onChangeText={handleYearInput}
+                        maxLength={4}
+                    />
+                </View>
+
                 <View className="h-24" />
             </ScrollView>
 
-            {/* --- FOOTER (NÚT ÁP DỤNG CỐ ĐỊNH Ở DƯỚI) --- */}
-            <View className={`absolute bottom-0 left-0 right-0 p-4 border-t border-zinc-800 bg-zinc-950/95 blur-md ${Platform.OS === 'ios' ? 'pb-8' : 'pb-4'}`}>
+            <View className={`absolute bottom-0 left-0 right-0 p-4 border-t border-zinc-800 bg-zinc-950/95 ${Platform.OS === 'ios' ? 'pb-8' : 'pb-4'}`}>
                 <TouchableOpacity
-                    className="bg-red-600 w-full py-4 rounded-xl items-center shadow-lg shadow-red-900/50 flex-row justify-center gap-2"
+                    className="bg-green-600 w-full py-4 rounded-xl items-center shadow-lg flex-row justify-center gap-2"
                     onPress={() => onApply(filters)}
                 >
                     <Check size={20} color="white" />
-                    <Text className="text-white text-lg font-bold uppercase">Áp dụng bộ lọc</Text>
+                    <Text className="text-white text-lg font-bold">Lọc kết quả →</Text>
                 </TouchableOpacity>
             </View>
         </View>
