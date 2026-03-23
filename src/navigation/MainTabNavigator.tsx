@@ -6,7 +6,7 @@ import PeopleScreen from '../app/people/PeopleScreen';
 import SearchScreen from '../app/search/SearchScreen';
 import WatchPartyScreen from '../app/watch-party/WatchPartyScreen';
 import ProfileStackNavigator from './ProfileStackNavigator';
-import { Platform } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { useGlobalNotifications } from '../contexts/NotificationContext';
 
 const Tab = createBottomTabNavigator();
