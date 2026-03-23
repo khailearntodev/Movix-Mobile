@@ -150,23 +150,42 @@ export const useNotifications = (
         try {
             setIsLoading(true);
             const response = await notificationService.getNotifications(page, limit);
-            setHasMore(response.data.hasNext);
-            setCurrentPage(page);
+            if (response.success && response.data) {
+                if (page === 1) {
+                    setNotifications(response.data.notifications);
+                } else {
+                    setNotifications(prev => [...prev, ...response.data.notifications]);
+                }
+                setHasMore(response.data.hasNext);
+                setCurrentPage(page);
+            }
         } catch (error) {
-            Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể tải thông báo' });
+            console.error('Error fetching notifications:', error);
+            // Toast.show({ type: 'error', text1: 'Lỗi', text2: 'Không thể tải thông báo' });
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [userToken]);
 
     const fetchUnreadCount = useCallback(async () => {
+        if (!userToken) return;
         try {
             const count = await notificationService.getUnreadCount();
             setUnreadCount(count);
         } catch (error) {
             console.error('Error fetching unread count:', error);
         }
-    }, []);
+    }, [userToken]);
+
+    useEffect(() => {
+        if (userToken) {
+            fetchNotifications(1);
+            fetchUnreadCount();
+        } else {
+            setNotifications([]);
+            setUnreadCount(0);
+        }
+    }, [userToken, fetchNotifications, fetchUnreadCount]);
 
     const markAsRead = useCallback((notificationId: string) => {
         if (socketRef.current && socketRef.current.connected) {

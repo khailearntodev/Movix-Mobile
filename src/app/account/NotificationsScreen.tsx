@@ -1,61 +1,9 @@
-import React from 'react';
-import { View, Text, FlatList, TouchableOpacity } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Bell, Film, MessageSquare, Users, AlertTriangle, ChevronLeft } from 'lucide-react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-
-type NotificationType = 'NEW_MOVIE' | 'COMMENT_REPLY' | 'WATCH_PARTY_INVITE' | 'SYSTEM';
-
-interface Notification {
-    id: string;
-    type: NotificationType;
-    title: string;
-    message: string;
-    isRead: boolean;
-    createdAt: string;
-}
-
-const MOCK_NOTIFICATIONS: Notification[] = [
-    {
-        id: '1',
-        type: 'NEW_MOVIE',
-        title: 'Phim mới: Dune: Part Two',
-        message: 'Siêu phẩm hành động viễn tưởng đã có mặt trên Movix. Xem ngay!',
-        isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    },
-    {
-        id: '2',
-        type: 'SYSTEM',
-        title: 'Cập nhật hệ thống',
-        message: 'Movix Mobile bản cập nhật 2.0 đã sẵn sàng. Trải nghiệm giao diện mới ngay.',
-        isRead: false,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    },
-    {
-        id: '3',
-        type: 'WATCH_PARTY_INVITE',
-        title: 'Lời mời xem chung',
-        message: 'Huỳnh Quốc Huy mời bạn tham gia xem phim "Interstellar".',
-        isRead: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    },
-    {
-        id: '4',
-        type: 'COMMENT_REPLY',
-        title: 'Phản hồi bình luận',
-        message: 'Có người vừa trả lời bình luận của bạn trong "Kung Fu Panda 4".',
-        isRead: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-    },
-    {
-        id: '5',
-        type: 'NEW_MOVIE',
-        title: 'Phim mới: Godzilla x Kong',
-        message: 'Cuộc chiến giữa các titan tiếp tục. Đừng bỏ lỡ!',
-        isRead: true,
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 3 days ago
-    },
-];
+import { useGlobalNotifications } from '../../contexts/NotificationContext'; 
+import { Notification, NotificationType } from '../../types/notification';
 
 const NotificationIcon = ({ type }: { type: NotificationType }) => {
     switch (type) {
@@ -95,8 +43,40 @@ const NotificationsScreen = () => {
     const route = useRoute<any>();
     const isTab = route.params?.isTab;
 
+    const context = useGlobalNotifications();
+    
+    // Fallback if context is null
+    const { 
+        notifications, 
+        isLoading, 
+        markAsRead, 
+        markAllAsRead, 
+        fetchNotifications, 
+        deleteNotification 
+    } = context || { 
+        notifications: [], 
+        isLoading: false, 
+        markAsRead: () => {}, 
+        markAllAsRead: () => {}, 
+        fetchNotifications: async () => {}, 
+        deleteNotification: async () => {} 
+    };
+
+    const handleRefresh = useCallback(() => {
+        fetchNotifications();
+    }, [fetchNotifications]);
+
+    const handleNotificationPress = (notification: Notification) => {
+        if (!notification.isRead) {
+            markAsRead(notification.id);
+        }
+        // Handle navigation based on notification type here
+        // e.g., if (notification.type === 'NEW_MOVIE') navigation.navigate('MovieDetail', { id: notification.data?.movieId });
+    };
+
     const renderItem = ({ item }: { item: Notification }) => (
         <TouchableOpacity
+            onPress={() => handleNotificationPress(item)}
             className={`flex-row p-4 border-b border-zinc-900 ${item.isRead ? '' : 'bg-zinc-900/40'}`}
         >
             <View className="mr-4 mt-1 bg-zinc-800 p-2 rounded-full h-10 w-10 items-center justify-center">
@@ -122,10 +102,18 @@ const NotificationsScreen = () => {
     return (
         <View className="flex-1 bg-black pt-12">
             <FlatList
-                data={MOCK_NOTIFICATIONS}
+                data={notifications}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={{ paddingBottom: 20 }}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isLoading}
+                        onRefresh={handleRefresh}
+                        tintColor="#dc2626" 
+                        colors={['#dc2626']}
+                    />
+                }
                 ListHeaderComponent={
                     <View className="flex-row justify-between items-center px-4 py-4 border-b border-zinc-900 bg-black">
                         {!isTab ? (
@@ -138,10 +126,18 @@ const NotificationsScreen = () => {
                                 <Text className="text-white text-2xl font-bold">Thông báo</Text>
                             </View>
                         )}
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => markAllAsRead()}>
                             <Text className="text-red-500 font-medium">Đánh dấu đã đọc</Text>
                         </TouchableOpacity>
                     </View>
+                }
+                ListEmptyComponent={
+                    !isLoading ? (
+                        <View className="items-center justify-center py-20">
+                            <Bell size={48} color="#52525b" />
+                            <Text className="text-zinc-500 mt-4 text-base">Không có thông báo nào</Text>
+                        </View>
+                    ) : null
                 }
                 stickyHeaderIndices={[0]}
             />
