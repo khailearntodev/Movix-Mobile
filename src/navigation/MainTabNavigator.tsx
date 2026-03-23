@@ -7,6 +7,7 @@ import SearchPage from '../app/search/page';
 import WatchPartyScreen from '../app/watch-party/page';
 import ProfileStackNavigator from './ProfileStackNavigator';
 import { View, Text, Platform } from 'react-native';
+import { useGlobalNotifications } from '../contexts/NotificationContext';
 
 
 const Tab = createBottomTabNavigator();
@@ -19,6 +20,9 @@ const ProfileScreen = () => (
 );
 
 export default function MainTabNavigator() {
+  const notificationContext = useGlobalNotifications();
+  const unreadCount = notificationContext?.unreadCount || 0;
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -72,7 +76,18 @@ export default function MainTabNavigator() {
         component={ProfileStackNavigator} 
         options={{
             tabBarLabel: 'Cá nhân',
-            tabBarIcon: ({ color }) => <User color={color} size={24} />
+            tabBarIcon: ({ color }) => (
+              <View>
+                <User color={color} size={24} />
+                {unreadCount > 0 && (
+                  <View className="absolute -top-2 -right-2 bg-red-600 rounded-full min-w-[16px] h-4 justify-center items-center px-1">
+                    <Text className="text-white text-[10px] font-bold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )
         }}
       />
     </Tab.Navigator>
