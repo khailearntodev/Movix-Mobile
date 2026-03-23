@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from './src/contexts/AuthContext';
+import { NotificationProvider } from './src/contexts/NotificationContext';
 import "./global.css";
 import LoginPage from "./src/app/(auth)/login/LoginScreen";
 import RegisterPage from "./src/app/(auth)/register/RegisterScreen";
@@ -29,6 +30,7 @@ import WatchMovieScreen from "./src/app/movie/WatchMovieScreen";
 import AIChatScreen from "./src/app/ai/AIChatScreen";
 import PeopleScreen from "./src/app/people/PeopleScreen";
 import PersonDetailScreen from "./src/app/people/PersonDetailScreen";
+import Toast from "react-native-toast-message";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -36,6 +38,7 @@ export default function App() {
   return (
     <AuthProvider>
         <NavigationContainer>
+        <NotificationProvider >
             <Stack.Navigator
                 initialRouteName="Welcome"
                 screenOptions={{ headerShown: false }}
@@ -48,39 +51,40 @@ export default function App() {
                 <Stack.Screen name="ForgotPassword" component={ForgotPasswordPage} />
                 <Stack.Screen name="ResetPassword" component={ResetPasswordPage} />
 
-                {/* Main App Group - This contains Home, Search, People, WatchParty Tabs */}
-                <Stack.Screen
-                    name="Main"
-                    component={MainTabNavigator}
-                    options={{ gestureEnabled: false }} 
-                />
-                
-                {/* Screen details that are outside of tabs but accessible */}
-                <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
-                <Stack.Screen name="WatchMovie" component={WatchMovieScreen} />
-                <Stack.Screen name="Remote" component={RemoteScreen} />
-                
-                <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
-                <Stack.Screen name="AIChat" component={AIChatScreen} />
-                <Stack.Screen name="PersonDetail" component={PersonDetailScreen} />
+            {/* Main App Group */}
+            <Stack.Screen
+              name="Main"
+              component={MainTabNavigator}
+              options={{ gestureEnabled: false }} 
+            />
+            <Stack.Screen name="MovieDetail" component={MovieDetailScreen} />
+            <Stack.Screen name="WatchMovie" component={WatchMovieScreen} />
+            <Stack.Screen name="Remote" component={RemoteScreen} />
+            <Stack.Screen name="Search" component={SearchPage} />
+            <Stack.Screen name="WatchParty" component={WatchPartyScreen} />
+            <Stack.Screen name="WatchPartyRoom" component={WatchPartyRoom} />
+            <Stack.Screen name="AIChat" component={AIChatScreen} />
+            <Stack.Screen name="People" component={PeopleScreen} />
+            <Stack.Screen name="PersonDetail" component={PersonDetailScreen} />
 
-                {/* Account Group */}
-                <Stack.Screen name="Playlist" component={PlaylistScreen} />
-                <Stack.Screen name="Favorites" component={FavoritesScreen} />
-                <Stack.Screen name="History" component={HistoryScreen} />
-                <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-                <Stack.Screen name="Notifications" component={NotificationsScreen} />
-                <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            {/* Account Group */}
+            <Stack.Screen name="Playlist" component={PlaylistScreen} />
+            <Stack.Screen name="Favorites" component={FavoritesScreen} />
+            <Stack.Screen name="History" component={HistoryScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="Subscription" component={SubscriptionScreen} />
 
-                {/* Modals */}
-                <Stack.Screen
-                    name="Filter"
-                    component={FilterPage}
-                    options={{ presentation: "modal", animation: "slide_from_bottom" }}
-                />
-            </Stack.Navigator>
-            <StatusBar style="light" />
-        </NavigationContainer>
+            <Stack.Screen
+              name="Filter"
+              component={FilterPage}
+              options={{ presentation: "modal", animation: "slide_from_bottom" }}
+            />
+          </Stack.Navigator>
+        </NotificationProvider>
+        <Toast />
+      <StatusBar style="light" />
+    </NavigationContainer>
     </AuthProvider>
   );
 }
