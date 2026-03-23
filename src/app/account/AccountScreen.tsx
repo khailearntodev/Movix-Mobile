@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator } fr
 import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMyProfile, UserProfile } from '@/services/user.service';
+import { AIChatButton } from '@/components/common/AIChatButton';
 
 const AccountScreen = () => {
     const navigation = useNavigation<any>();
@@ -131,6 +132,7 @@ const AccountScreen = () => {
 
                 <Text className="text-zinc-600 text-center text-xs mb-8">Movix Mobile v1.0.0</Text>
             </ScrollView>
+            <AIChatButton />
         </View>
     );
 };

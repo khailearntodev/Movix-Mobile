@@ -9,6 +9,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { watchPartyService } from '@/services/watch-party';
+import { AIChatButton } from '@/components/common/AIChatButton';
 
 export default function WatchPartyScreen() {
     const [filter, setFilter] = useState<'live' | 'scheduled' | 'ended'>('live');
@@ -169,6 +170,7 @@ export default function WatchPartyScreen() {
                 visible={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
             />
+            <AIChatButton />
         </View>
     );
 }

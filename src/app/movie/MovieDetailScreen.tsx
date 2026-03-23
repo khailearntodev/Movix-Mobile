@@ -40,7 +40,8 @@ export default function MovieDetailScreen() {
       if (!movie.slug && !movie.id) return;
       setIsLoading(true);
       try {
-        const slugOrId = movie.slug || movie.id.toString();
+        const slugOrId = movie?.slug || movie?.id?.toString();
+        if (!slugOrId) return;
         const data = await getMovie(slugOrId);
         setMovieData(data);
       } catch (error) {
@@ -113,7 +114,7 @@ export default function MovieDetailScreen() {
     setIsSpoiler,
     replyingTo,
     setReplyingTo
-  } = useComments(movieData.id.toString(), showToast);
+  } = useComments(movieData?.id?.toString() || "", showToast);
 
   const getImageUrl = (path: string | null | undefined) => {
     if (!path) return 'https://via.placeholder.com/500x750?text=No+Image';

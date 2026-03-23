@@ -11,6 +11,7 @@ import { getDynamicSections, MovieSection } from "../../services/movie.service";
 import HeroBanner from "../../components/home/HeroBanner";
 import GenreList from "../../components/home/GenreList";
 import { Search, MessageCircle } from "lucide-react-native";
+import { AIChatButton } from "../../components/common/AIChatButton";
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -128,13 +129,7 @@ export default function HomeScreen() {
 
 
         </ScrollView>
-        <TouchableOpacity
-          className="absolute bottom-6 right-6 w-14 h-14 bg-red-600 rounded-full items-center justify-center shadow-lg shadow-red-900/50 z-50 pointer-events-auto"
-          onPress={() => navigation.navigate("AIChat")}
-        >
-          <MessageCircle size={28} color="white" />
-          <View className="absolute top-1 right-1 w-3 h-3 bg-green-500 rounded-full border border-black" />
-        </TouchableOpacity>
+        <AIChatButton />
       </SafeAreaView>
     </View>
   );

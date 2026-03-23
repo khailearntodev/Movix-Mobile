@@ -6,6 +6,7 @@ import { Person } from '../../types/person';
 import { ArrowLeft, Search } from 'lucide-react-native';
 import { RootStackParamList } from '../../types/navigation';
 import { peopleService } from '../../services/people';
+import { AIChatButton } from '../../components/common/AIChatButton';
 
 const PeopleScreen = () => {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -139,6 +140,7 @@ const PeopleScreen = () => {
           }
         />
       )}
+      <AIChatButton />
     </SafeAreaView>
   );
 };

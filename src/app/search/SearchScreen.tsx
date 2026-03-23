@@ -21,6 +21,7 @@ import type { Movie } from '../../types/movie';
 import type { Person } from '../../types/person';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
+import { AIChatButton } from '../../components/common/AIChatButton';
 
 function SearchScreen({ navigation, route }: any) {
     const [searchMode, setSearchMode] = useState<'normal' | 'ai_text' | 'voice' | 'image'>('normal');
@@ -382,6 +383,7 @@ function SearchScreen({ navigation, route }: any) {
                     ListFooterComponent={() => (isLoading || isLoadingMore) ? <ActivityIndicator size="small" color="#ef4444" className="py-4" /> : null}
                 />
             </SafeAreaView>
+            <AIChatButton />
         </View>
     );
 }
