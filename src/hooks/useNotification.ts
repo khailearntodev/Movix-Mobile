@@ -5,7 +5,7 @@ import { notificationService } from '@/services/notification.service';
 import type { Notification } from '@/types/notification';
 
 const getSocketUrl = () => {
-    const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://movix-be.onrender.com';
+    const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'https://movix-be.onrender.com' || 'http://13.212.20.97:5000';
     return baseUrl.replace(/\/api\/?$/, '');
 };
 
