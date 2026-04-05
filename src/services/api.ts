@@ -34,6 +34,7 @@ api.interceptors.response.use(
     },
     async (error) => {
         const originalRequest = error.config;
+        const shouldSkipErrorLog = originalRequest?.headers?.['X-Skip-Error-Log'] === '1';
 
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
@@ -63,12 +64,14 @@ api.interceptors.response.use(
             }
         }
 
-        if (error.response) {
-            console.error('API Error:', error.response.status, error.response.data);
-        } else if (error.request) {
-            console.error('Network Error: Không kết nối được server');
-        } else {
-            console.error('Error:', error.message);
+        if (!shouldSkipErrorLog) {
+            if (error.response) {
+                console.error('API Error:', error.response.status, error.response.data);
+            } else if (error.request) {
+                console.error('Network Error: Không kết nối được server');
+            } else {
+                console.error('Error:', error.message);
+            }
         }
         return Promise.reject(error);
     }
