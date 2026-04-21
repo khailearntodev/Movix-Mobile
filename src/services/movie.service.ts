@@ -207,7 +207,7 @@ export async function filterMovies(params: any): Promise<{ movies: Movie[], pagi
   }
 }
 
-export async function submitVoiceAiSearch(audioUri: string): Promise<{ movies: Movie[], recognizedText?: string }> {
+export async function submitVoiceAiSearch(audioUri: string): Promise<{ movies: Movie[], recognizedText?: string, remaining?: number }> {
   const formData = new FormData();
   formData.append('audio', {
     uri: audioUri,
@@ -224,15 +224,16 @@ export async function submitVoiceAiSearch(audioUri: string): Promise<{ movies: M
     const moviesData = Array.isArray(responseData) ? responseData : responseData.data || [];
     return {
       movies: moviesData.map(mapToMovie),
-      recognizedText: responseData.recognizedText
+      recognizedText: responseData.recognizedText,
+      remaining: responseData.remaining
     };
   } catch (error: any) {
     console.error("Lỗi AI Voice:", error?.response?.data || error.message);
-    throw new Error('Lỗi phân tích giọng nói');
+    throw error;
   }
 }
 
-export async function submitImageAiSearch(imageUri: string, mimeType: string = 'image/jpeg'): Promise<Movie[]> {
+export async function submitImageAiSearch(imageUri: string, mimeType: string = 'image/jpeg'): Promise<{ movies: Movie[], remaining?: number }> {
   const formData = new FormData();
   formData.append('image', {
     uri: imageUri,
@@ -246,20 +247,21 @@ export async function submitImageAiSearch(imageUri: string, mimeType: string = '
       timeout: 120000,
     });
     const results = Array.isArray(data) ? data : data.data || [];
-    return results.map(mapToMovie);
+    return { movies: results.map(mapToMovie), remaining: data.remaining };
   } catch (error: any) {
     console.error("Lỗi AI Image:", error?.response?.data || error.message);
-    throw new Error('Lỗi tìm kiếm hình ảnh');
+    throw error;
   }
 }
 
-export async function submitTextAiSearch(query: string): Promise<Movie[]> {
+export async function submitTextAiSearch(query: string): Promise<{ movies: Movie[], remaining?: number }> {
   try {
     const { data } = await api.post('/ai/search', { query }, { timeout: 120000 });
-    return (data || []).map(mapToMovie);
+    const results = Array.isArray(data) ? data : data.data || [];
+    return { movies: results.map(mapToMovie), remaining: data.remaining };
   } catch (error: any) {
     console.error("Lỗi AI Text:", error?.response?.data || error.message);
-    throw new Error('Lỗi tìm kiếm AI Text');
+    throw error;
   }
 }
 

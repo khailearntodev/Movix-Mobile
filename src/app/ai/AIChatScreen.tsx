@@ -62,7 +62,22 @@ export default function AIChatScreen() {
     ]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [remaining, setRemaining] = useState<number | null>(null);
     const flatListRef = useRef<FlatList>(null);
+
+    useEffect(() => {
+        const fetchLimit = async () => {
+            try {
+                const res = await api.get('/ai/limit');
+                if (res.data.remaining !== undefined) {
+                    setRemaining(res.data.remaining);
+                }
+            } catch (err) {
+                console.error("Lỗi lấy giới hạn AI:", err);
+            }
+        };
+        fetchLimit();
+    }, []);
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -82,13 +97,25 @@ export default function AIChatScreen() {
                 sender: "bot"
             };
             setMessages(prev => [...prev, botMsg]);
-        } catch (error) {
+            if (res.data.remaining !== undefined) {
+                setRemaining(res.data.remaining);
+            }
+        } catch (error: any) {
             console.error("Chat error:", error);
-            setMessages(prev => [...prev, { 
-                id: `err-${Date.now()}`, 
-                text: "Rất tiếc, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.", 
-                sender: "bot" 
-            }]);
+            if (error.response?.status === 403) {
+                setRemaining(0);
+                setMessages(prev => [...prev, { 
+                    id: `err-${Date.now()}`, 
+                    text: error.response.data.message || "Bạn đã hết lượt dùng AI hôm nay.", 
+                    sender: "bot" 
+                }]);
+            } else {
+                setMessages(prev => [...prev, { 
+                    id: `err-${Date.now()}`, 
+                    text: "Rất tiếc, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.", 
+                    sender: "bot" 
+                }]);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -187,6 +214,13 @@ export default function AIChatScreen() {
                             <View className="flex-row items-center gap-1">
                                 <View className="w-1.5 h-1.5 bg-green-400 rounded-full" />
                                 <Text className="text-[10px] text-green-200 font-medium">Sẵn sàng hỗ trợ</Text>
+                                {remaining !== null && (
+                                    <View className="bg-white/20 px-1.5 py-0.5 rounded ml-2">
+                                        <Text className="text-[10px] text-white">
+                                            {remaining === -1 ? 'Vô hạn lượt' : `Còn: ${remaining} lượt`}
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
                         </View>
                     </View>
