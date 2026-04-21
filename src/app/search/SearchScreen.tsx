@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SectionList, ActivityIndicator, Image, Animated, DeviceEventEmitter } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, SectionList, ActivityIndicator, Image, Animated, DeviceEventEmitter, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -57,7 +57,8 @@ function SearchScreen({ navigation, route }: any) {
                     setAiTextQuery(res.recognizedText);
                     setNormalQuery(res.recognizedText);
                 }
-                setSections(res.movies.length > 0 ? [{ title: 'Gợi ý từ Giọng nói (AI)', data: res.movies, type: 'movie' }] : []);
+                const title = `Gợi ý từ Giọng nói (AI) ${res.remaining !== undefined ? (res.remaining === -1 ? '(Vô hạn)' : `(Còn ${res.remaining} lượt)`) : ''}`;
+                setSections(res.movies.length > 0 ? [{ title, data: res.movies, type: 'movie' }] : []);
                 setVoiceStatus('idle');
                 return;
             }
@@ -102,17 +103,26 @@ function SearchScreen({ navigation, route }: any) {
             } else if (searchMode === 'ai_text') {
                 const query = source && !['voice', 'image', 'filter_event', 'filter_param', 'more'].includes(source) ? source : aiTextQuery;
                 if (!query.trim()) return;
-                const movies = await submitTextAiSearch(query);
-                setSections(movies.length > 0 ? [{ title: 'Gợi ý từ AI', data: movies, type: 'movie' }] : []);
+                const { movies, remaining } = await submitTextAiSearch(query);
+                setSections(movies.length > 0 ? [{ title: `Gợi ý từ AI ${remaining !== undefined ? (remaining === -1 ? '(Vô hạn)' : `(Còn ${remaining} lượt)`) : ''}`, data: movies, type: 'movie' }] : []);
 
             } else if (searchMode === 'image') {
                 if (selectedImage) {
-                    const movies = await submitImageAiSearch(selectedImage);
-                    setSections(movies.length > 0 ? [{ title: 'Tìm thấy qua hình ảnh', data: movies, type: 'movie' }] : []);
+                    const { movies, remaining } = await submitImageAiSearch(selectedImage);
+                    setSections(movies.length > 0 ? [{ title: `Tìm thấy qua hình ảnh ${remaining !== undefined ? (remaining === -1 ? '(Vô hạn)' : `(Còn ${remaining} lượt)`) : ''}`, data: movies, type: 'movie' }] : []);
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Search error:", error);
+            if (error?.response?.status === 403) {
+                Alert.alert(
+                    "Đã đạt giới hạn",
+                    error.response.data.message || "Bạn đã hết lượt dùng AI hôm nay. Vui lòng nâng cấp gói VIP.",
+                    [{ text: "Đóng", style: "cancel" }]
+                );
+            } else {
+                Alert.alert("Lỗi", "Không thể tìm kiếm, vui lòng thử lại sau.");
+            }
             setSections([]);
         } finally {
             setIsLoading(false);
