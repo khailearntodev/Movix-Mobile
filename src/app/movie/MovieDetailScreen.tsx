@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, SafeAreaView, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { ArrowLeft, Play, Star, Calendar, Clock, Plus, Share2, Heart, MessageCircle, Send, AlertTriangle, MessageSquare, X } from "lucide-react-native";
 import { RootStackParamList } from "../../types/navigation";

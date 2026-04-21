@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNotifications } from '../hooks/useNotification'; // Trỏ đến file hook ở trên
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import { useAuth } from './AuthContext';
 import { getAccessToken } from '../utils/storage';
 
@@ -24,7 +25,16 @@ export const NotificationProvider = ({
         };
         fetchToken();
     }, [user]);
+
     const notificationState = useNotifications(token, { enableToast: true });
+
+    usePushNotifications({
+        userToken: token,
+        onNotificationPress: (data) => {
+            console.log('[NotificationContext] Notification pressed with data:', data);
+            // TODO: map data.actionUrl | data.movieId | data.partyId sang navigation route.
+        },
+    });
 
     return (
         <NotificationContext.Provider value={notificationState}>

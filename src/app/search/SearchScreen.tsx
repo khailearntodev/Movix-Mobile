@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, SectionList, ActivityIndicator, Image, Animated, DeviceEventEmitter, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, SectionList, ActivityIndicator, Image, Animated, DeviceEventEmitter } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {

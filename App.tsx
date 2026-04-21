@@ -1,4 +1,5 @@
 import React from "react";
+import { LogBox } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from "expo-status-bar";
@@ -31,6 +32,10 @@ import AIChatScreen from "./src/app/ai/AIChatScreen";
 import PeopleScreen from "./src/app/people/PeopleScreen";
 import PersonDetailScreen from "./src/app/people/PersonDetailScreen";
 import Toast from "react-native-toast-message";
+
+LogBox.ignoreLogs([
+  "SafeAreaView has been deprecated and will be removed in a future release.",
+]);
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

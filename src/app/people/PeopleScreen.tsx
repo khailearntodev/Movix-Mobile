@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, SafeAreaView, StatusBar as RNStatusBar, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StatusBar as RNStatusBar, ActivityIndicator, TextInput, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { Person } from '../../types/person';
