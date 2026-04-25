@@ -93,21 +93,27 @@ export const useNotifications = (
         newSocket.on('notification:new', (notification: Notification) => {
             console.log('Thông báo mới:', notification);
 
-            setNotifications(prev => [notification, ...prev]);
+            setNotifications(prev => {
+                if (prev.some(n => n.id === notification.id)) {
+                    return prev;
+                }
+                
+                if (!notification.isRead) {
+                    setUnreadCount(count => count + 1);
+                }
 
-            if (!notification.isRead) {
-                setUnreadCount(prev => prev + 1);
-            }
+                if (options.enableToast) {
+                    Toast.show({
+                        type: 'info',
+                        text1: notification.title,
+                        text2: notification.message,
+                        visibilityTime: 4000,
+                        topOffset: 50,
+                    });
+                }
 
-            if (options.enableToast) {
-                Toast.show({
-                    type: 'info',
-                    text1: notification.title,
-                    text2: notification.message,
-                    visibilityTime: 4000,
-                    topOffset: 50,
-                });
-            }
+                return [notification, ...prev];
+            });
         });
 
         newSocket.on('account:locked', () => {
@@ -154,7 +160,11 @@ export const useNotifications = (
                 if (page === 1) {
                     setNotifications(response.data.notifications);
                 } else {
-                    setNotifications(prev => [...prev, ...response.data.notifications]);
+                    setNotifications(prev => {
+                        const existingIds = new Set(prev.map(n => n.id));
+                        const newUnique = response.data.notifications.filter((n: Notification) => !existingIds.has(n.id));
+                        return [...prev, ...newUnique];
+                    });
                 }
                 setHasMore(response.data.hasNext);
                 setCurrentPage(page);

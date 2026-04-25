@@ -9,6 +9,7 @@ import NotificationsScreen from '../app/account/NotificationsScreen';
 import EditProfileScreen from '../app/account/EditProfileScreen';
 import ChangePasswordScreen from '../app/account/ChangePasswordScreen';
 import SubscriptionScreen from '../app/account/SubscriptionScreen';
+import DownloadsScreen from '../app/account/DownloadsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,6 +27,10 @@ export default function ProfileStackNavigator() {
             <Stack.Screen
                 name="Subscription"
                 component={SubscriptionScreen}
+            />
+            <Stack.Screen
+                name="Downloads"
+                component={DownloadsScreen}
             />
             <Stack.Screen
                 name="Favorites"

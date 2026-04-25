@@ -116,8 +116,8 @@ export const usePushNotifications = ({
             } catch (error) {
                 if (isMounted) {
                     if (isAxiosError(error) && error.response?.status === 404) {
-                        console.warn('[usePushNotifications] Backend chưa có endpoint register-device, bỏ qua đăng ký token trên server.');
-                        setPushError('Backend chưa hỗ trợ /notifications/register-device. Push token đã tạo nhưng chưa được lưu server.');
+                        console.warn('[usePushNotifications] Backend chưa có endpoint expo-token, bỏ qua đăng ký token trên server.');
+                        setPushError('Backend chưa hỗ trợ /notifications/expo-token. Push token đã tạo nhưng chưa được lưu server.');
                     } else {
                         console.error('[usePushNotifications] Register token failed:', error);
                         setPushError(error instanceof Error ? error.message : 'Không thể đăng ký push token');

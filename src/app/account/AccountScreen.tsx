@@ -99,7 +99,10 @@ const AccountScreen = () => {
                         </View>
                         <Text className="text-zinc-400 text-xs font-medium">Thông báo</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity className="items-center gap-2">
+                    <TouchableOpacity 
+                        className="items-center gap-2"
+                        onPress={() => navigation.navigate('Downloads')}
+                    >
                         <View className="w-12 h-12 bg-zinc-800 rounded-full items-center justify-center">
                             <Download size={24} color="white" />
                         </View>

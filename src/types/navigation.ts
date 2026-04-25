@@ -19,8 +19,9 @@ export type RootStackParamList = {
   History: undefined;
   EditProfile: undefined;
   Notifications: undefined;
+  Downloads: undefined;
   Subscription: undefined;
-  WatchMovie: { movie: Movie; episodeId?: string };
+  WatchMovie: { movie: Movie; episodeId?: string; offlineUrl?: string };
   AIChat: undefined;
   People: undefined;
   PersonDetail: { personId: string };

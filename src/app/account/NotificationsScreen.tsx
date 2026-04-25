@@ -104,7 +104,7 @@ const NotificationsScreen = () => {
             <FlatList
                 data={notifications}
                 renderItem={renderItem}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item, index) => `${item.id || 'notif'}-${index}`}
                 contentContainerStyle={{ paddingBottom: 20 }}
                 refreshControl={
                     <RefreshControl

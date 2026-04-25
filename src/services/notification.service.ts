@@ -32,10 +32,8 @@ export const notificationService = {
     },
 
     async registerDeviceToken(expoPushToken: string, platform: 'ios' | 'android' | 'web', deviceId?: string): Promise<void> {
-        await api.post(`${NOTIFICATION_BASE_URL}/register-device`, {
-            expoPushToken,
-            platform,
-            deviceId,
+        await api.post(`${NOTIFICATION_BASE_URL}/expo-token`, {
+            expoToken: expoPushToken,
         }, {
             headers: {
                 'X-Skip-Error-Log': '1',
@@ -45,7 +43,7 @@ export const notificationService = {
 
     async unregisterDeviceToken(expoPushToken: string): Promise<void> {
         await api.post(`${NOTIFICATION_BASE_URL}/unregister-device`, {
-            expoPushToken,
+            token: expoPushToken,
         }, {
             headers: {
                 'X-Skip-Error-Log': '1',
