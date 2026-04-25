@@ -22,12 +22,17 @@ import {
     removeMovieFromPlaylist
 } from '../../services/interaction.service';
 
+import * as Application from 'expo-application';
+import { Platform, Alert } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import { downloadService } from '../../services/download.service';
+
 type WatchMovieRouteProp = RouteProp<RootStackParamList, 'WatchMovie'>;
 
 export default function WatchMovieScreen() {
     const route = useRoute<WatchMovieRouteProp>();
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const { movie: initialMovie, episodeId: episodeIdFromParam } = route.params;
+    const { movie: initialMovie, episodeId: episodeIdFromParam, offlineUrl } = route.params;
     const [movie, setMovie] = useState<Movie>(initialMovie);
     
     // Add loading state for video
@@ -66,12 +71,14 @@ export default function WatchMovieScreen() {
 
     const [currentEpisode, setCurrentEpisode] = useState<Episode | undefined>(initialEpisode);
     const [currentVideoUrl, setCurrentVideoUrl] = useState<string>(
-        initialEpisode?.videoUrl || movie.videoUrl || ""
+        offlineUrl || initialEpisode?.videoUrl || movie.videoUrl || ""
     );
 
     // Update state if movie/params change or initialEpisode changes
     useEffect(() => {
-        if (initialEpisode) {
+        if (offlineUrl && (!currentEpisode || currentEpisode.id === episodeIdFromParam)) {
+            setCurrentVideoUrl(offlineUrl);
+        } else if (initialEpisode) {
             setCurrentEpisode(initialEpisode);
             const videoSource = initialEpisode.videoUrl || movie.videoUrl || "";
             setCurrentVideoUrl(videoSource);
@@ -79,7 +86,7 @@ export default function WatchMovieScreen() {
             setCurrentVideoUrl(movie.videoUrl);
             setCurrentEpisode(undefined);
         }
-    }, [initialEpisode, movie.videoUrl]);
+    }, [initialEpisode, movie.videoUrl, offlineUrl, currentEpisode, episodeIdFromParam]);
 
     const handleEpisodeSelect = (episode: Episode) => {
         setCurrentEpisode(episode);
@@ -257,6 +264,74 @@ export default function WatchMovieScreen() {
     const getImageUrl = (path: string | undefined | null) =>
         path?.startsWith('http') ? path : path ? `https://image.tmdb.org/t/p/w500${path}` : "https://placehold.co/600x400/1a1a1a/FFF.png";
 
+    const handleDownload = async () => {
+        const episodeId = currentEpisode?.id || movie?.id;
+        if (!episodeId) {
+            Alert.alert('Lỗi', 'Không thể xác định tập phim để tải.');
+            return;
+        }
+
+        try {
+            // Lấy ID thiết bị
+            let deviceId = 'unknown-device';
+            if (Platform.OS === 'android') {
+                deviceId = Application.getAndroidId() || 'unknown-android';
+            } else if (Platform.OS === 'ios') {
+                deviceId = await Application.getIosIdForVendorAsync() || 'unknown-ios';
+            }
+            const requestRes = await downloadService.requestDownload({
+                episodeId: episodeId.toString(),
+                deviceId,
+            });
+
+            if (requestRes.success) {
+                const { download, videoUrl } = requestRes.data;
+                Alert.alert('Thành công', 'Video đang được tải xuống, vui lòng không đóng ứng dụng.');
+
+                try {
+                    // Thư mục lưu trữ
+                    const dir = `${FileSystem.documentDirectory}downloads/`;
+                    const dirInfo = await FileSystem.getInfoAsync(dir);
+                    if (!dirInfo.exists) {
+                        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+                    }
+                    const extension = videoUrl.split('.').pop()?.split('?')[0] || 'mp4';
+                    const localFilePath = `${dir}${download.id}.${extension}`;
+
+                    const downloadResumable = FileSystem.createDownloadResumable(
+                        videoUrl,
+                        localFilePath,
+                        {},
+                        (downloadProgress) => {
+                            const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+                            console.log(`[ID: ${download.id}] Tiến độ tải: ${Math.round(progress * 100)}%`);
+                        }
+                    );
+
+                    const result = await downloadResumable.downloadAsync();
+
+                    if (result && result.uri) {
+                        console.log(`[Tải xong] Local File Path vừa tạo: ${result.uri}`);
+                        await downloadService.completeDownload(download.id, {
+                            filePath: result.uri
+                        });
+                        console.log(`Đã báo hoàn tất lên Server ID: ${download.id}`);
+                        Alert.alert('Thành công', 'Tải video hoàn tất!');
+                    } else {
+                        Alert.alert('Lỗi', 'Không thể lưu file video vào thiết bị.');
+                    }
+                } catch (err) {
+                    console.error('Lỗi khi tải hoặc complete download:', err);
+                    Alert.alert('Lỗi', 'Quá trình tải file gặp sự cố.');
+                }
+            }
+        } catch (error: any) {
+            console.error("Lỗi khi tải phim:", error);
+            const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra hoặc bạn chưa đăng ký gói Premium.';
+            Alert.alert('Lỗi tải xuống', errorMsg);
+        }
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-black" edges={['top', 'left', 'right']}>
             <StatusBar barStyle="light-content" backgroundColor="#000" />
@@ -346,7 +421,7 @@ export default function WatchMovieScreen() {
                             <Share2 color="white" size={20} />
                             <Text className="text-white text-sm font-medium">Chia sẻ</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity className="items-center flex-row space-x-2 gap-2">
+                        <TouchableOpacity onPress={handleDownload} className="items-center flex-row space-x-2 gap-2">
                             <Download color="white" size={20} />
                             <Text className="text-white text-sm font-medium">Tải về</Text>
                         </TouchableOpacity>
