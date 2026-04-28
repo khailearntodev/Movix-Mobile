@@ -196,6 +196,17 @@ export async function getDynamicSections(): Promise<MovieSection[]> {
   }
 }
 
+export async function getForYouMovies(): Promise<Movie[]> {
+  try{
+    const { data } = await api.get<any>("/movies/for-you");
+    const results = Array.isArray(data) ? data : (data?.data || []);
+    return results.map(mapToMovie);
+  } catch (error) {
+    console.error("Lỗi lấy phim dành cho bạn:", error);
+    return [];
+  }
+}
+
 export async function filterMovies(params: any): Promise<{ movies: Movie[], pagination: any }> {
   try {
     const { data } = await api.get('/movies/filter', { params });

@@ -8,7 +8,7 @@ import { MovieCard } from "../../components/movie/MovieCard";
 import { Movie } from "../../types/movie";
 import { Banner } from "../../types/banner";
 import { bannerService } from "../../services/banner.service";
-import { getDynamicSections, MovieSection } from "../../services/movie.service";
+import { getDynamicSections, getForYouMovies, MovieSection } from "../../services/movie.service";
 import HeroBanner from "../../components/home/HeroBanner";
 import GenreList from "../../components/home/GenreList";
 import { Search, MessageCircle } from "lucide-react-native";
@@ -23,12 +23,21 @@ export default function HomeScreen() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [bannersData, sectionsData] = await Promise.all([
+      const [bannersData, sectionsData, forYouData] = await Promise.all([
         bannerService.getBanners(),
-        getDynamicSections()
+        getDynamicSections(),
+        getForYouMovies()
       ]);
       setBanners(bannersData);
-      setSections(sectionsData);
+      
+      let allSections = sectionsData;
+      if (forYouData && forYouData.length > 0) {
+        allSections = [
+          { id: "for-you", title: "Dành cho bạn", movies: forYouData },
+          ...sectionsData
+        ];
+      }
+      setSections(allSections);
     } catch (error) {
       console.error("Home data fetch error:", error);
     }
