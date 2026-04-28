@@ -66,7 +66,7 @@ export const useNotifications = (
         console.log('[useNotifications] Connecting to:', SOCKET_URL);
 
         const socketOptions = {
-            transports: ['websocket'], 
+            transports: ['polling', 'websocket'], 
             auth: { token: userToken }, 
             reconnection: true,
             reconnectionDelay: 1000,
