@@ -3,11 +3,14 @@ import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator } fr
 import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMyProfile, UserProfile } from '@/services/user.service';
+import { subscriptionService } from '@/services/subscription.service';
+import { UserSubscription } from '@/types/subscription';
 import { AIChatButton } from '@/components/common/AIChatButton';
 
 const AccountScreen = () => {
     const navigation = useNavigation<any>();
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useFocusEffect(
@@ -19,14 +22,22 @@ const AccountScreen = () => {
     const loadUserProfile = async () => {
         try {
             setIsLoading(true);
-            const data = await getMyProfile();
-            setUserProfile(data);
+            const [profileData, subData] = await Promise.all([
+                getMyProfile(),
+                subscriptionService.getUserSubscription().catch(() => null)
+            ]);
+            setUserProfile(profileData);
+            setUserSubscription(subData);
         } catch (error) {
             console.error('Error loading profile:', error);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const isPremium = userSubscription && 
+                      userSubscription.status === 'ACTIVE' && 
+                      new Date(userSubscription.end_date) > new Date();
 
     const renderMenuItem = (icon: any, label: string, onPress: () => void, color = "#a1a1aa", showBadge = false) => (
         <TouchableOpacity
@@ -69,15 +80,15 @@ const AccountScreen = () => {
                     >
                         <Image
                             source={{ uri: userProfile.avatar_url || 'https://github.com/shadcn.png' }}
-                            className="w-24 h-24 rounded-md mb-3 border-2 border-transparent"
+                            className={`w-24 h-24 rounded-md mb-3 ${isPremium ? 'border-2 border-yellow-500' : 'border-2 border-transparent'}`}
                         />
                         <Text className="text-white text-xl font-bold mb-1">
                             {userProfile.display_name || userProfile.username || 'Người dùng'}
                         </Text>
-                        <View className="flex-row items-center gap-1 bg-zinc-800 px-3 py-1 rounded-full">
-                            {userProfile.id === 'PREMIUM' && <Crown size={12} color="#eab308" />}
-                            <Text className="text-zinc-300 text-xs font-medium uppercase">
-                                {userProfile.id || 'Thành viên'}
+                        <View className={`flex-row items-center gap-1 px-3 py-1 rounded-full ${isPremium ? 'bg-yellow-500/20' : 'bg-zinc-800'}`}>
+                            {isPremium && <Crown size={14} color="#eab308" />}
+                            <Text className={`${isPremium ? 'text-yellow-500 font-bold' : 'text-zinc-300 font-medium'} text-xs uppercase`}>
+                                {isPremium ? 'VIP MEMBER' : 'Thành viên'}
                             </Text>
                         </View>
                     </TouchableOpacity>
