@@ -70,6 +70,7 @@ const PlaylistDetailScreen = () => {
                  navigation.navigate('MovieDetail', { 
                     movie: {
                         id: item.id,
+                        slug: item.slug,
                         title: item.title,
                         posterUrl: item.poster_url,
                         backdropUrl: item.backdrop_url,
