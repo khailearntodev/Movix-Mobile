@@ -8,7 +8,7 @@ import CreatePartyModal from '@/components/watch-party/CreatePartyModal';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { watchPartyService } from '@/services/watch-party';
+import { watchPartyService } from '@/services/watch-party.service';
 import { AIChatButton } from '@/components/common/AIChatButton';
 
 export default function WatchPartyScreen() {
@@ -24,21 +24,21 @@ export default function WatchPartyScreen() {
     useFocusEffect(
         React.useCallback(() => {
             const fetchRooms = async () => {
-              try {
-                setLoading(true);
-                const data = await watchPartyService.getAllRooms(filter, searchQuery);
-                setRooms(data);
-              } catch (error) {
-                console.error("Error fetching watch parties:", error);
-              } finally {
-                setLoading(false);
-              }
+                try {
+                    setLoading(true);
+                    const data = await watchPartyService.getAllRooms(filter, searchQuery);
+                    setRooms(data);
+                } catch (error) {
+                    console.error("Error fetching watch parties:", error);
+                } finally {
+                    setLoading(false);
+                }
             };
-    
+
             const timer = setTimeout(() => {
                 fetchRooms();
             }, 500);
-    
+
             return () => clearTimeout(timer);
         }, [filter, searchQuery])
     );

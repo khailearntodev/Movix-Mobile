@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.service';
 import {
     LoginPayload,
     LoginResponse,
@@ -46,7 +46,7 @@ export const getMe = async (): Promise<User> => {
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {
-    await api.post('/auth/forgot-password', {email});
+    await api.post('/auth/forgot-password', { email });
 };
 
 export const resetPassword = async (token: string, newPassword: string): Promise<void> => {

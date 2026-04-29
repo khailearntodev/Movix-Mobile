@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, LoginPayload, RegisterPayload } from '@/types/auth'; 
-import * as authService from '@/services/auth';
+import { User, LoginPayload, RegisterPayload } from '@/types/auth';
+import * as authService from '@/services/auth.service';
 import { getAccessToken, saveToken, clearToken } from '@/utils/storage';
-import { setLogoutCallback } from '@/services/api';
+import { setLogoutCallback } from '@/services/api.service';
 
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     signIn: (payload: LoginPayload) => Promise<void>;
-    signUp: (payload: RegisterPayload) => Promise<User>; 
+    signUp: (payload: RegisterPayload) => Promise<User>;
     signOut: () => Promise<void>;
     isAuthenticated: boolean;
 }
@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         setLogoutCallback(signOut);
         return () => {
-            setLogoutCallback(() => {});
+            setLogoutCallback(() => { });
         };
     }, []);
 
@@ -61,9 +61,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             setIsLoading(true);
             const response = await authService.login(payload);
-            
+
             await saveToken(response.accessToken, response.refreshToken);
-            
+
             const userData = await authService.getMe();
             setUser(userData);
         } catch (error) {

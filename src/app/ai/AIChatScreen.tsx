@@ -5,7 +5,7 @@ import { X, Send, Bot, User } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types/navigation";
-import api from "../../services/api";
+import api from "../../services/api.service";
 
 interface Message {
     id: string;
@@ -85,7 +85,7 @@ export default function AIChatScreen() {
 
         const userText = input.trim();
         const userMsg: Message = { id: Date.now().toString(), text: userText, sender: "user" };
-        
+
         setMessages(prev => [...prev, userMsg]);
         setInput("");
         setIsLoading(true);
@@ -105,16 +105,16 @@ export default function AIChatScreen() {
             console.error("Chat error:", error);
             if (error.response?.status === 403) {
                 setRemaining(0);
-                setMessages(prev => [...prev, { 
-                    id: `err-${Date.now()}`, 
-                    text: error.response.data.message || "Bạn đã hết lượt dùng AI hôm nay.", 
-                    sender: "bot" 
+                setMessages(prev => [...prev, {
+                    id: `err-${Date.now()}`,
+                    text: error.response.data.message || "Bạn đã hết lượt dùng AI hôm nay.",
+                    sender: "bot"
                 }]);
             } else {
-                setMessages(prev => [...prev, { 
-                    id: `err-${Date.now()}`, 
-                    text: "Rất tiếc, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.", 
-                    sender: "bot" 
+                setMessages(prev => [...prev, {
+                    id: `err-${Date.now()}`,
+                    text: "Rất tiếc, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau.",
+                    sender: "bot"
                 }]);
             }
         } finally {
@@ -134,7 +134,7 @@ export default function AIChatScreen() {
         // Clean stars and common MD markers
         const cleanText = text.replace(/\*/g, "").trim();
         const regex = /\[([^\]]+)\]\s*\(([^)]+)\)/g;
-        
+
         const parts = [];
         let lastIndex = 0;
         let match;
@@ -144,9 +144,9 @@ export default function AIChatScreen() {
                 parts.push(cleanText.substring(lastIndex, match.index));
             }
 
-            const label = match[1].trim(); 
-            const url = match[2].trim(); 
-            
+            const label = match[1].trim();
+            const url = match[2].trim();
+
             // Extract slug from /movies/slug
             const slugMatch = url.match(/\/movies\/([^/]+)/);
             const slug = slugMatch ? slugMatch[1] : null;
@@ -169,8 +169,8 @@ export default function AIChatScreen() {
                 {parts.map((part, index) => {
                     if (typeof part === 'string') return part;
                     return (
-                        <Text 
-                            key={index} 
+                        <Text
+                            key={index}
                             onPress={() => part.slug && navigation.navigate("MovieDetail", { movie: { slug: part.slug, id: part.slug } } as any)}
                             className="text-red-500 font-bold underline"
                         >

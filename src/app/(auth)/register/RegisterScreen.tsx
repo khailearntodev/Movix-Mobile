@@ -7,7 +7,7 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
 
-import { verify, resendVerification } from "@/services/auth";
+import { verify, resendVerification } from "@/services/auth.service";
 import { useAuth } from "@/contexts/AuthContext";
 import OtpModal from "@/components/auth/OtpModal";
 
@@ -51,12 +51,12 @@ export default function RegisterPage() {
         try {
             setIsLoading(true);
             await register({ username, email, password });
-            
+
             setShowOtpModal(true);
 
         } catch (error: any) {
             const message =
-              error.response?.data?.message || "Đăng ký thất bại.";
+                error.response?.data?.message || "Đăng ký thất bại.";
             Alert.alert("Lỗi", message);
         } finally {
             setIsLoading(false);
@@ -66,7 +66,7 @@ export default function RegisterPage() {
     const handleVerifyOtp = async (otpCode: string) => {
         try {
             setVerifyLoading(true);
-            
+
             await verify({ email, verificationCode: otpCode });
 
             setShowOtpModal(false);
@@ -75,8 +75,8 @@ export default function RegisterPage() {
             ]);
 
         } catch (error: any) {
-             const message = error.response?.data?.message || "Mã xác thực sai.";
-             Alert.alert("Lỗi", message);
+            const message = error.response?.data?.message || "Mã xác thực sai.";
+            Alert.alert("Lỗi", message);
         } finally {
             setVerifyLoading(false);
         }
@@ -101,7 +101,7 @@ export default function RegisterPage() {
             {/* Overlay */}
             <View className="absolute inset-0 bg-black/70" />
 
-            <OtpModal 
+            <OtpModal
                 open={showOtpModal}
                 targetEmail={email}
                 isLoading={verifyLoading}

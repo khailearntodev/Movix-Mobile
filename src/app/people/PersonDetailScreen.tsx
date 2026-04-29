@@ -5,7 +5,7 @@ import { useNavigation, useRoute, RouteProp, NavigationProp } from '@react-navig
 import { StatusBar } from 'expo-status-bar';
 import { RootStackParamList } from '../../types/navigation';
 import { Person, PersonCredit } from '../../types/person';
-import { peopleService } from '../../services/people';
+import { peopleService } from '../../services/people.service';
 import { ArrowLeft, User, Calendar, MapPin, Briefcase } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -52,12 +52,12 @@ const PersonDetailScreen = () => {
         );
     }
 
-    const getImageUrl = (path: string | null) => 
+    const getImageUrl = (path: string | null) =>
         path ? path : 'https://via.placeholder.com/500x750?text=No+Image';
-    
+
     // Helper for rendering credit items horizontally
     const renderCreditItem = ({ item }: { item: PersonCredit }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             className="mr-4 space-y-2 w-32"
             onPress={() => {
                 // @ts-ignore - Bypass tạm vì type Movie truyền vào có thể chưa match hoàn toàn với require của MovieDetail
@@ -65,8 +65,8 @@ const PersonDetailScreen = () => {
             }}
         >
             <View className="w-32 h-48 bg-neutral-800 rounded-lg overflow-hidden relative">
-                <Image 
-                    source={{ uri: getImageUrl(item.movie.poster_url) }} 
+                <Image
+                    source={{ uri: getImageUrl(item.movie.poster_url) }}
                     className="w-full h-full bg-neutral-700"
                     resizeMode="cover"
                 />
@@ -84,15 +84,15 @@ const PersonDetailScreen = () => {
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }} bounces={false}>
                 {/* Header Image */}
                 <View className="relative w-full bg-neutral-800 shadow-2xl shadow-neutral-900" style={{ height: width * 1.3 }}>
-                    <Image 
-                        source={{ uri: getImageUrl(person.avatar_url) }} 
-                        style={{ width, height: width * 1.3 }} 
+                    <Image
+                        source={{ uri: getImageUrl(person.avatar_url) }}
+                        style={{ width, height: width * 1.3 }}
                         resizeMode="cover"
                     />
                     <View className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-neutral-900 to-transparent" />
-                    
-                    <TouchableOpacity 
-                        onPress={() => navigation.goBack()} 
+
+                    <TouchableOpacity
+                        onPress={() => navigation.goBack()}
                         className="absolute top-12 left-4 bg-black/40 p-2 rounded-full"
                     >
                         <ArrowLeft color="white" size={24} />
@@ -120,7 +120,7 @@ const PersonDetailScreen = () => {
                         <Text className="text-neutral-400 text-[10px] uppercase mt-1">Giới tính</Text>
                     </View>
                     <View className="w-[1px] bg-neutral-700 mx-2" />
-                     <View className="items-center flex-1">
+                    <View className="items-center flex-1">
                         <Calendar color="#ef4444" size={20} style={{ marginBottom: 4 }} />
                         <Text className="text-white font-bold text-xs mt-1">
                             {person.birthday ? new Date(person.birthday).toLocaleDateString('vi-VN') : 'N/A'}
@@ -141,7 +141,7 @@ const PersonDetailScreen = () => {
 
                 {/* Known For / Movie People */}
                 {person.movie_people && person.movie_people.length > 0 && (
-                     <View className="mt-8">
+                    <View className="mt-8">
                         <Text className="text-white text-lg font-bold px-4 mb-4 border-l-4 border-red-600 ml-4 pl-3">Các phim đã tham gia</Text>
                         <FlatList
                             data={person.movie_people}

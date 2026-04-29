@@ -1,11 +1,11 @@
-import api from './api';
+import api from './api.service';
 import { Movie } from '@/types/movie'; //
 
 export interface Playlist {
   id: string;
   name: string;
   user_id: string;
-  _count?: { 
+  _count?: {
     playlist_movies: number;
   };
   created_at?: string;
@@ -20,7 +20,7 @@ export interface PlaylistMovieResponse {
   release_date: string;
   media_type: string;
   added_at: string;
-  overview?: string; 
+  overview?: string;
   vote_average?: number;
   origin_country?: string[];
 }
@@ -29,14 +29,14 @@ export interface PlaylistDetail extends Playlist {
 }
 export const toggleFavorite = async (movieId: string) => {
   const response = await api.post('/interact/favorite/toggle', { movieId });
-  return response.data; 
+  return response.data;
 };
 
 export const checkFavoriteStatus = async (movieId: string) => {
   const response = await api.get('/interact/favorite/status', {
     params: { movieId },
   });
-  return response.data; 
+  return response.data;
 };
 
 export const getFavoriteMovies = async (): Promise<Movie[]> => {
@@ -133,7 +133,7 @@ export interface RatingItem {
   user: {
     id: string;
     username: string;
-    display_name: string; 
+    display_name: string;
     avatar_url: string | null;
   };
 }
@@ -149,5 +149,5 @@ interface RatingListResponse {
 }
 export const getMovieRatings = async (movieId: string): Promise<RatingItem[]> => {
   const response = await api.get<RatingListResponse>(`/interact/rating/list/${movieId}`);
-  return response.data.data; 
+  return response.data.data;
 };

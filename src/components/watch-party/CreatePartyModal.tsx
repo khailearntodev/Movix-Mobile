@@ -6,8 +6,8 @@ import {
 import { X, Search, Calendar, ChevronDown, Check } from 'lucide-react-native';
 // @ts-ignore
 import DateTimePicker from '@react-native-community/datetimepicker';
-import api from '@/services/api';
-import { watchPartyService } from '@/services/watch-party';
+import api from '@/services/api.service';
+import { watchPartyService } from '@/services/watch-party.service';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/types/navigation';
@@ -31,7 +31,7 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
     const [title, setTitle] = useState('');
     const [movieQuery, setMovieQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
-    
+
     // Movie vs TV Show
     const [selectedMovie, setSelectedMovie] = useState<any>(null);
     const [movieDetails, setMovieDetails] = useState<any>(null);
@@ -39,7 +39,7 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
     const [selectedEpisode, setSelectedEpisode] = useState<any>(null);
 
     const [isPrivate, setIsPrivate] = useState(false);
-    
+
     const [isScheduled, setIsScheduled] = useState(false);
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -130,8 +130,8 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView 
-                        className="p-5 flex-1" 
+                    <ScrollView
+                        className="p-5 flex-1"
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                     >
@@ -186,7 +186,7 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                                                     <View className="flex-1">
                                                         <Text className="text-white font-medium" numberOfLines={1}>{movie.title}</Text>
                                                         <Text className="text-slate-400 text-xs">
-                                                            {movie.media_type === 'TV' ? 'Series' : 'Movie'} • {movie.release_date?.substring(0,4) || 'N/A'}
+                                                            {movie.media_type === 'TV' ? 'Series' : 'Movie'} • {movie.release_date?.substring(0, 4) || 'N/A'}
                                                         </Text>
                                                     </View>
                                                 </TouchableOpacity>
@@ -204,11 +204,11 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                                     <Text className="text-slate-300 font-medium mb-4">Mùa</Text>
                                     <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                                         {movieDetails.seasons?.map((season: any) => (
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 key={season.id}
                                                 onPress={() => {
                                                     setSelectedSeason(season);
-                                                    if(season.episodes?.length > 0) setSelectedEpisode(season.episodes[0]);
+                                                    if (season.episodes?.length > 0) setSelectedEpisode(season.episodes[0]);
                                                 }}
                                                 className={`px-4 py-2 mr-2 rounded-lg border ${selectedSeason?.id === season.id ? 'border-red-600 bg-red-600/20' : 'border-slate-700 bg-black/30'}`}>
                                                 <Text className={selectedSeason?.id === season.id ? 'text-red-500 font-bold' : 'text-slate-400'}>
@@ -223,7 +223,7 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                                         <Text className="text-slate-300 font-medium mb-4">Tập</Text>
                                         <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                                             {selectedSeason.episodes?.map((ep: any) => (
-                                                <TouchableOpacity 
+                                                <TouchableOpacity
                                                     key={ep.id}
                                                     onPress={() => setSelectedEpisode(ep)}
                                                     className={`px-4 py-2 mr-2 rounded-lg border ${selectedEpisode?.id === ep.id ? 'border-red-600 bg-red-600/20' : 'border-slate-700 bg-black/30'}`}>
@@ -260,12 +260,12 @@ export default function CreatePartyModal({ visible, onClose }: CreatePartyModalP
                                 <View className="bg-black/20 p-3 rounded-xl border border-slate-800">
                                     <Text className="text-yellow-500 text-sm mb-2">Chọn thời gian</Text>
                                     <View className="flex-row gap-2">
-                                        <TouchableOpacity 
+                                        <TouchableOpacity
                                             className="flex-1 bg-black/40 p-3 rounded border border-slate-700"
                                             onPress={() => setShowDatePicker(true)}>
                                             <Text className="text-white text-center">{date.toLocaleDateString('vi-VN')}</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity 
+                                        <TouchableOpacity
                                             className="flex-1 bg-black/40 p-3 rounded border border-slate-700"
                                             onPress={() => setShowTimePicker(true)}>
                                             <Text className="text-white text-center">{date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Text>

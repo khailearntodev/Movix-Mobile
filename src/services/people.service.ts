@@ -1,5 +1,5 @@
-import api from '@/services/api';
-import {Person}  from '@/types/person';
+import api from '@/services/api.service';
+import { Person } from '@/types/person';
 
 interface PeopleResponse {
     data: Person[];
@@ -19,7 +19,7 @@ export const peopleService = {
         const response = await api.get<PeopleResponse>('/people', { params });
         return response.data;
     },
-    
+
     getDetail: async (personId: string): Promise<Person> => {
         const response = await api.get<Person>('/people/' + personId);
         return response.data;

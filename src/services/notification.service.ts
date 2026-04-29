@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.service';
 import type { NotificationsResponse, UnreadCountResponse } from '../types/notification';
 
 const NOTIFICATION_BASE_URL = '/notifications';

@@ -7,7 +7,7 @@ import { API_URL } from "../../../constants/config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
 
-import {resetPassword} from "@/services/auth";
+import { resetPassword } from "@/services/auth.service";
 
 
 type ResetPasswordRouteParams = {
@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
             await resetPassword(token, newPassword);
             Alert.alert("Thành công", "Mật khẩu đã được đặt lại thành công!", [
                 {
-                    text: "OK", 
+                    text: "OK",
                     onPress: () => navigation.navigate("Login"),
                 },
             ]);

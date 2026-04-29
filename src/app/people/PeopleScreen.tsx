@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Person } from '../../types/person';
 import { ArrowLeft, Search } from 'lucide-react-native';
 import { RootStackParamList } from '../../types/navigation';
-import { peopleService } from '../../services/people';
+import { peopleService } from '../../services/people.service';
 import { AIChatButton } from '../../components/common/AIChatButton';
 
 const PeopleScreen = () => {

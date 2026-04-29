@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Platform, ActivityIndicator } from 'react-native';
 import { X, RotateCcw, Check, Calendar, Film, Globe, Tag, Shield } from 'lucide-react-native';
-import api from '../../services/api';
+import api from '../../services/api.service';
 
 const TYPES = [
     { id: 'all', label: 'Tất cả' },
@@ -106,11 +106,10 @@ export default function FilterForm({ initialValues, onApply, onClose }: FilterFo
     ) => (
         <TouchableOpacity
             onPress={onPress}
-            className={`px-3 py-2 rounded-full border ${
-                isSelected
+            className={`px-3 py-2 rounded-full border ${isSelected
                     ? 'border-green-600 bg-green-600/10'
                     : 'bg-zinc-900 border-zinc-800'
-            } ${style === 'block' ? 'flex-1 items-center' : ''}`}
+                } ${style === 'block' ? 'flex-1 items-center' : ''}`}
         >
             <Text className={`text-sm ${isSelected ? 'text-green-400 font-bold' : 'text-zinc-400'}`}>
                 {label}
@@ -152,11 +151,10 @@ export default function FilterForm({ initialValues, onApply, onClose }: FilterFo
                         <TouchableOpacity
                             key={opt.id}
                             onPress={() => setFilters({ ...filters, type: opt.id })}
-                            className={`flex-1 items-center px-4 py-3 rounded-xl border ${
-                                filters.type === opt.id
+                            className={`flex-1 items-center px-4 py-3 rounded-xl border ${filters.type === opt.id
                                     ? 'border-green-600 bg-green-600/10'
                                     : 'bg-zinc-900 border-zinc-800'
-                            }`}
+                                }`}
                         >
                             <Text className={`${filters.type === opt.id ? 'text-green-400 font-bold' : 'text-zinc-400'}`}>
                                 {opt.label}

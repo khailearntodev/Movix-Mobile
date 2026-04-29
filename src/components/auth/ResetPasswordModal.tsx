@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Modal, TextInput, Alert, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { resetPasswordWithOtp } from "../../services/auth";
+import { resetPasswordWithOtp } from "../../services/auth.service";
 
 interface ResetPasswordModalProps {
     open: boolean;
@@ -18,8 +18,8 @@ export default function ResetPasswordModal({ open, onClose, email }: ResetPasswo
 
     const handleSubmit = async () => {
         if (!otp || !newPassword || !confirmPassword) {
-             Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin.");
-             return;
+            Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin.");
+            return;
         }
 
         if (newPassword !== confirmPassword) {
@@ -31,17 +31,17 @@ export default function ResetPasswordModal({ open, onClose, email }: ResetPasswo
             setIsLoading(true);
             await resetPasswordWithOtp(email, otp, newPassword);
             Alert.alert("Thành công", "Mật khẩu đã được đặt lại.", [
-                { 
-                    text: "Đăng nhập ngay", 
-                    onPress: () => { 
-                        onClose(); 
-                        navigation.navigate("Login" as never); 
-                    } 
+                {
+                    text: "Đăng nhập ngay",
+                    onPress: () => {
+                        onClose();
+                        navigation.navigate("Login" as never);
+                    }
                 }
             ]);
         } catch (error: any) {
             const msg = error.response?.data?.message || "Đặt lại mật khẩu thất bại.";
-             Alert.alert("Lỗi", msg);
+            Alert.alert("Lỗi", msg);
         } finally {
             setIsLoading(false);
         }
