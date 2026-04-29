@@ -307,8 +307,9 @@ export default function WatchPartyRoomPage() {
 
             socketInstance = io(SOCKET_URL, {
                 auth: { token },
-                transports: ["websocket"],
+                transports: ["polling", "websocket"],
                 forceNew: true,
+                reconnectionAttempts: 5,
             });
             socketRef.current = socketInstance as unknown as Socket;
 
