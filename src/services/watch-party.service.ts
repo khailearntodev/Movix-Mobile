@@ -1,4 +1,4 @@
-import api from '@/services/api';
+import api from '@/services/api.service';
 import { PartyRoom, RoomStatus } from '@/types/watch-party';
 
 export const watchPartyService = {
@@ -20,9 +20,9 @@ export const watchPartyService = {
     createRoom: async (data: { title: string, movieId: string, episodeId?: string, isPrivate: boolean, scheduledAt?: string }): Promise<PartyRoom> => {
         const response = await api.post<PartyRoom>('/watch-party', data);
         return response.data;
-    }, 
-    
-    getWatchPartyDetails: async (roomId: string) : Promise<{ party: any; messages: any[] }> => {
+    },
+
+    getWatchPartyDetails: async (roomId: string): Promise<{ party: any; messages: any[] }> => {
         const response = await api.get<{ party: any; messages: any[] }>('/watch-party/' + roomId);
         return response.data;
     }

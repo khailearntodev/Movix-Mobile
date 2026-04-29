@@ -8,7 +8,7 @@ import { API_URL } from "../../../constants/config";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../../types/navigation";
 
-import { forgotPassword } from "@/services/auth";
+import { forgotPassword } from "@/services/auth.service";
 
 export default function ForgotPasswordPage() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
             setIsLoading(true);
             await forgotPassword(email);
             Alert.alert(
-                "Đã gửi Email", 
+                "Đã gửi Email",
                 "Mã OTP đã được gửi đến email của bạn.",
                 [
                     {

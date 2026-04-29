@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.service';
 import { Banner } from '../types/banner';
 
 const TMDB_IMAGE_URL = 'https://image.tmdb.org/t/p/original';
@@ -13,7 +13,7 @@ export const bannerService = {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data } = await api.get<any>('/banners');
-      const items = Array.isArray(data) ? data : data.data; 
+      const items = Array.isArray(data) ? data : data.data;
       if (!Array.isArray(items)) return [];
 
       return items.map((item: any) => ({

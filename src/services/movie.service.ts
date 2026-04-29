@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.service';
 import type { Movie, MovieResponse, Season, Genre } from "@/types/movie";
 import type { Actor } from "@/types/actor";
 import type { Director } from "@/types/director";
@@ -54,7 +54,7 @@ function mapDirector(moviePeople: any[] = []): Director | undefined {
   return directorRaw
     ? {
       name: directorRaw.person.name,
-      avatarUrl:directorRaw.person.avatar_url,
+      avatarUrl: directorRaw.person.avatar_url,
       origin: "Unknown",
     }
     : undefined;
@@ -197,7 +197,7 @@ export async function getDynamicSections(): Promise<MovieSection[]> {
 }
 
 export async function getForYouMovies(): Promise<Movie[]> {
-  try{
+  try {
     const { data } = await api.get<any>("/movies/for-you");
     const results = Array.isArray(data) ? data : (data?.data || []);
     return results.map(mapToMovie);

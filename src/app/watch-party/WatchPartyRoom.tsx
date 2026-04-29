@@ -23,7 +23,7 @@ import {
 import { clsx } from 'clsx';
 import { RootStackParamList } from '../../types/navigation';
 import { Message, WatchPartyMember, RoomData } from '@/types/watch-party';
-import { watchPartyService } from '@/services/watch-party';
+import { watchPartyService } from '@/services/watch-party.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { SOCKET_URL } from '@/constants/config';
 import { getAccessToken } from '@/utils/storage';
@@ -141,7 +141,7 @@ export default function WatchPartyRoomPage() {
 
     const socketRef = useRef<Socket | null>(null);
     const videoRef = useRef<Video>(null);
-    const isSocketAction = useRef(false); 
+    const isSocketAction = useRef(false);
     const lastTimeRef = useRef(0);
     const flatListRef = useRef<FlatList>(null);
 
@@ -154,7 +154,7 @@ export default function WatchPartyRoomPage() {
     const [showEmoji, setShowEmoji] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [isPendingApproval, setIsPendingApproval] = useState(false);
-    
+
     const [showJoinCodeModal, setShowJoinCodeModal] = useState(false);
     const [joinCodeInput, setJoinCodeInput] = useState("");
     const [inviteVisible, setInviteVisible] = useState(false);
@@ -164,14 +164,14 @@ export default function WatchPartyRoomPage() {
     const [isHostUser, setIsHostUser] = useState(false);
 
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0); 
-    const [duration, setDuration] = useState(0); 
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
     const isHost = Boolean(roomData && user && roomData.host_user_id === user.id);
 
     const isHostRef = useRef(isHost);
     useEffect(() => {
         isHostRef.current = isHost;
-    }, [isHost]); 
+    }, [isHost]);
     const [showManualControls, setShowManualControls] = useState(false);
 
     const [isMicOn, setIsMicOn] = useState(true);
@@ -198,32 +198,32 @@ export default function WatchPartyRoomPage() {
     const { width: screenWidth } = Dimensions.get('window');
     const videoHeight = screenWidth * (9 / 16);
     const headerHeight = videoHeight + 50;
-    
+
     useEffect(() => {
         console.log("WatchPartyRoom useEffect 1 - Check user/room:", { hasUser: !!user, roomId, authLoading });
-        if (!roomId || authLoading) return; 
+        if (!roomId || authLoading) return;
 
         const fetchRoomData = async () => {
             try {
                 const res: any = await watchPartyService.getWatchPartyDetails(roomId);
-                console.log("[DEBUG] Fetch Room Data:", { 
-                    roomId, 
-                    isPrivate: res.party?.is_private, 
-                    hostId: res.party?.host_user_id, 
+                console.log("[DEBUG] Fetch Room Data:", {
+                    roomId,
+                    isPrivate: res.party?.is_private,
+                    hostId: res.party?.host_user_id,
                     userId: user?.id,
                     isHostFromBE: res.isHost
                 });
 
                 setRoomData(res.party);
                 setMessages(res.messages || []);
-                
+
                 const isHostFromServer = res.isHost || (user?.id && res.party?.host_user_id === user.id);
                 setIsHostUser(Boolean(isHostFromServer));
 
                 if (isHostFromServer) {
                     console.log("[DEBUG] User identified as HOST. Authorized.");
                     setIsAuthorized(true);
-                    setShowJoinCodeModal(false); 
+                    setShowJoinCodeModal(false);
                 } else if (res.party?.is_private) {
                     const storedCode = await AsyncStorage.getItem(`wp_join_code_${roomId}`);
                     if (storedCode && storedCode === res.party.join_code) {
@@ -265,7 +265,7 @@ export default function WatchPartyRoomPage() {
             socketInstance = io(SOCKET_URL, {
                 auth: { token },
                 transports: ["websocket"],
-                forceNew: true, 
+                forceNew: true,
             });
             socketRef.current = socketInstance as unknown as Socket;
 
@@ -294,8 +294,8 @@ export default function WatchPartyRoomPage() {
             });
 
             socketInstance.on('wp:system_message', (msg: any) => {
-                 setMessages(prev => [...prev, { ...msg, isSystem: true, id: Date.now().toString() }]);
-                 setTimeout(() => { if (flatListRef.current) flatListRef.current.scrollToEnd({ animated: true }); }, 200);
+                setMessages(prev => [...prev, { ...msg, isSystem: true, id: Date.now().toString() }]);
+                setTimeout(() => { if (flatListRef.current) flatListRef.current.scrollToEnd({ animated: true }); }, 200);
             });
 
             // JOIN REQUESTS (HOST)
@@ -306,17 +306,21 @@ export default function WatchPartyRoomPage() {
                         return [...prev, requester];
                     });
                     Alert.alert(
-                        "Yêu cầu tham gia", 
+                        "Yêu cầu tham gia",
                         `${requester.displayName || requester.username} muốn vào phòng`,
                         [
-                            { text: "Từ chối", style: "cancel", onPress: () => {
-                                socketRef.current?.emit('wp:process_join_request', { roomId, userId: requester.userId, accept: false });
-                                setJoinRequests(prev => prev.filter(r => r.userId !== requester.userId));
-                            } },
-                            { text: "Chấp nhận", onPress: () => {
-                                socketRef.current?.emit('wp:process_join_request', { roomId, userId: requester.userId, accept: true });
-                                setJoinRequests(prev => prev.filter(r => r.userId !== requester.userId));
-                            }}
+                            {
+                                text: "Từ chối", style: "cancel", onPress: () => {
+                                    socketRef.current?.emit('wp:process_join_request', { roomId, userId: requester.userId, accept: false });
+                                    setJoinRequests(prev => prev.filter(r => r.userId !== requester.userId));
+                                }
+                            },
+                            {
+                                text: "Chấp nhận", onPress: () => {
+                                    socketRef.current?.emit('wp:process_join_request', { roomId, userId: requester.userId, accept: true });
+                                    setJoinRequests(prev => prev.filter(r => r.userId !== requester.userId));
+                                }
+                            }
                         ]
                     );
                 }
@@ -345,7 +349,7 @@ export default function WatchPartyRoomPage() {
             // ĐỒNG BỘ VIDEO TỪ SERVER
             socketInstance.on('wp:sync_player', async ({ action, currentTime: remoteTime }: { action: 'play' | 'pause' | 'seek', currentTime: number }) => {
                 if (!videoRef.current) return;
-                
+
                 isSocketAction.current = true;
 
                 const status = await videoRef.current.getStatusAsync();
@@ -366,11 +370,11 @@ export default function WatchPartyRoomPage() {
                         setIsPlaying(true);
                     }
                 } else if (action === 'pause') {
-                     if (status.isLoaded && status.isPlaying) {
+                    if (status.isLoaded && status.isPlaying) {
                         console.log(`[SYNC] Pause`);
                         await videoRef.current.pauseAsync();
                         setIsPlaying(false);
-                     }
+                    }
                 }
 
                 setTimeout(() => {
@@ -381,7 +385,7 @@ export default function WatchPartyRoomPage() {
             // NHẬN YÊU CẦU ĐỒNG BỘ TỪ VIEWER MỚI VÀO (CHỈ HOST XỬ LÝ)
             socketInstance.on('wp:get_host_time', async ({ requesterId }) => {
                 if (!isHostRef.current || !videoRef.current) return;
-                
+
                 const status = await videoRef.current.getStatusAsync();
                 if (status.isLoaded) {
                     const localTime = status.positionMillis / 1000 || 0;
@@ -397,14 +401,14 @@ export default function WatchPartyRoomPage() {
             // VIEWER NHẬN DỮ LIỆU ĐỒNG BỘ TỪ HOST KHI VỪA VÀO PHÒNG
             socketInstance.on('wp:sync_initial', async ({ targetUserId, currentTime: remoteTime, isPlaying: remoteIsPlaying }) => {
                 if (user.id !== targetUserId || !videoRef.current) return;
-                
+
                 isSocketAction.current = true;
                 console.log(`[SYNC INIT] Syncing new viewer to ${remoteTime}s and playing: ${remoteIsPlaying}`);
-                
+
                 await videoRef.current.setPositionAsync(remoteTime * 1000);
                 setCurrentTime(remoteTime);
                 lastTimeRef.current = remoteTime;
-                
+
                 if (remoteIsPlaying) {
                     await videoRef.current.playAsync();
                     setIsPlaying(true);
@@ -441,7 +445,7 @@ export default function WatchPartyRoomPage() {
                 } else {
                     Alert.alert("Thông báo", "Quyền chủ phòng đã được chuyển giao cho thành viên khác.");
                 }
-                
+
                 // Phải xóa cờ host cũ của mình để tránh lưu state isHostUser = true
                 setIsHostUser(user.id === newHostId);
                 setRoomData(prev => prev ? { ...prev, host_user_id: newHostId } : null);
@@ -449,8 +453,8 @@ export default function WatchPartyRoomPage() {
             });
 
             socketInstance.on('wp:room_ended', () => {
-                 Alert.alert("Thông báo", "Phòng đã kết thúc.");
-                 navigation.goBack();
+                Alert.alert("Thông báo", "Phòng đã kết thúc.");
+                navigation.goBack();
             });
         };
 
@@ -470,7 +474,7 @@ export default function WatchPartyRoomPage() {
 
         const currentSecs = status.positionMillis / 1000;
         setCurrentTime(currentSecs);
-        
+
         if (status.durationMillis) {
             setDuration(status.durationMillis / 1000);
         }
@@ -483,20 +487,20 @@ export default function WatchPartyRoomPage() {
             lastTimeRef.current = currentSecs;
             return;
         }
-        
+
         const diff = Math.abs(currentSecs - lastTimeRef.current);
-        const isSeeking = diff > 2; 
+        const isSeeking = diff > 2;
 
         if (isSeeking && status.isPlaying) {
-             console.log(`[HOST] User seeked logic detected: ${lastTimeRef.current} -> ${currentSecs}`);
-             socketRef.current.emit('wp:seek_action', { roomId, currentTime: currentSecs });
-             lastTimeRef.current = currentSecs;
-             return;
+            console.log(`[HOST] User seeked logic detected: ${lastTimeRef.current} -> ${currentSecs}`);
+            socketRef.current.emit('wp:seek_action', { roomId, currentTime: currentSecs });
+            lastTimeRef.current = currentSecs;
+            return;
         } else if (isSeeking && !status.isPlaying) {
-             console.log(`[HOST] User seeked (paused) logic detected: ${lastTimeRef.current} -> ${currentSecs}`);
-             socketRef.current.emit('wp:seek_action', { roomId, currentTime: currentSecs });
-             lastTimeRef.current = currentSecs;
-             return;
+            console.log(`[HOST] User seeked (paused) logic detected: ${lastTimeRef.current} -> ${currentSecs}`);
+            socketRef.current.emit('wp:seek_action', { roomId, currentTime: currentSecs });
+            lastTimeRef.current = currentSecs;
+            return;
         }
 
         if (status.isPlaying !== isPlaying) {
@@ -509,18 +513,18 @@ export default function WatchPartyRoomPage() {
                 currentTime: currentSecs
             });
         }
-        
+
         lastTimeRef.current = currentSecs;
     };
 
     const handleSeek = async (newTimeSeconds: number) => {
         if (!isHost || !videoRef.current || !socketRef.current) return;
-        
+
         await videoRef.current.setPositionAsync(newTimeSeconds * 1000);
         setCurrentTime(newTimeSeconds);
-        socketRef.current.emit('wp:seek_action', { 
-            roomId, 
-            currentTime: newTimeSeconds 
+        socketRef.current.emit('wp:seek_action', {
+            roomId,
+            currentTime: newTimeSeconds
         });
     };
 
@@ -545,8 +549,8 @@ export default function WatchPartyRoomPage() {
     const handleManualSync = () => {
         if (isHost) {
             socketRef.current?.emit('wp:sync_action', {
-                roomId, 
-                action: isPlaying ? 'play' : 'pause', 
+                roomId,
+                action: isPlaying ? 'play' : 'pause',
                 currentTime: currentTime
             });
             Alert.alert("Thành công", "Đã phát tín hiệu đồng bộ cho tất cả thành viên");
@@ -567,7 +571,7 @@ export default function WatchPartyRoomPage() {
 
     const handleSendMessage = () => {
         if (!msgInput.trim()) return;
-        
+
         if (!socketRef.current || !socketRef.current.connected) {
             Alert.alert("Lỗi kết nối", "Bạn chưa kết nối tới phòng chat. Vui lòng thử lại.");
             return;
@@ -619,12 +623,12 @@ export default function WatchPartyRoomPage() {
             "Tất cả thành viên sẽ bị ngắt kết nối. Hành động này không thể hoàn tác.",
             [
                 { text: "Hủy", style: "cancel" },
-                { 
-                    text: "Kết thúc ngay", 
+                {
+                    text: "Kết thúc ngay",
                     onPress: () => {
                         socketRef.current?.emit('wp:end_room', roomId);
-                    }, 
-                    style: "destructive" 
+                    },
+                    style: "destructive"
                 }
             ]
         );
@@ -656,7 +660,7 @@ export default function WatchPartyRoomPage() {
                     <Text className="text-slate-400 text-center mb-8">
                         Vui lòng chờ chủ phòng chấp nhận yêu cầu tham gia của bạn.
                     </Text>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => navigation.goBack()}
                         className="bg-slate-700 px-6 py-3 rounded-full"
                     >
@@ -713,14 +717,14 @@ export default function WatchPartyRoomPage() {
                 <View className="w-full aspect-video bg-black relative group z-10">
                     <Video
                         ref={videoRef}
-                        source={{ uri: roomData?.episode?.video_url || roomData?.movie?.video_url || "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }} 
+                        source={{ uri: roomData?.episode?.video_url || roomData?.movie?.video_url || "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }}
                         style={{ width: '100%', height: '100%' }}
                         resizeMode={ResizeMode.CONTAIN}
                         onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-                        useNativeControls={isHost} 
-                        rate={1.0} 
+                        useNativeControls={isHost}
+                        rate={1.0}
                     />
-                    
+
                     {!isPlaying && !isHost && (
                         <View className="absolute inset-0 bg-black/40 items-center justify-center pointer-events-none">
                             <ActivityIndicator color="white" />
@@ -808,20 +812,20 @@ export default function WatchPartyRoomPage() {
                                     );
                                 }}
                             />
-                            
-                            <EmojiPicker 
+
+                            <EmojiPicker
                                 onEmojiSelected={(emojiObject) => setMsgInput(prev => prev + emojiObject.emoji)}
                                 open={showEmoji}
-                                onClose={() => setShowEmoji(false)} 
+                                onClose={() => setShowEmoji(false)}
                             />
 
                             {/* Thêm padding/margin bottom cho Android/iOS khỏi bị lẹm bàn phím */}
                             <View className="p-3 bg-[#0A0A0A] border-t border-white/10 flex-row items-center gap-3 pb-6">
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     onPress={() => {
                                         Keyboard.dismiss();
                                         setShowEmoji(true);
-                                    }} 
+                                    }}
                                     className="w-9 h-9 items-center justify-center rounded-full bg-white/5"
                                 >
                                     <Smile size={20} color={showEmoji ? "#ef4444" : "#94a3b8"} />
@@ -887,7 +891,7 @@ export default function WatchPartyRoomPage() {
                                                         <Text className="text-white font-bold">{req.displayName || req.username}</Text>
                                                     </View>
                                                     <View className="flex-row gap-2">
-                                                        <TouchableOpacity 
+                                                        <TouchableOpacity
                                                             className="w-9 h-9 bg-green-600 rounded-full items-center justify-center"
                                                             onPress={() => {
                                                                 socketRef.current?.emit('wp:process_join_request', { roomId, userId: req.userId, accept: true });
@@ -896,7 +900,7 @@ export default function WatchPartyRoomPage() {
                                                         >
                                                             <Check size={18} color="white" />
                                                         </TouchableOpacity>
-                                                        <TouchableOpacity 
+                                                        <TouchableOpacity
                                                             className="w-9 h-9 bg-red-600 rounded-full items-center justify-center"
                                                             onPress={() => {
                                                                 socketRef.current?.emit('wp:process_join_request', { roomId, userId: req.userId, accept: false });
@@ -923,59 +927,59 @@ export default function WatchPartyRoomPage() {
                                 const isMuted = volume === 0;
 
                                 return (
-                                <View className="p-3 rounded-xl bg-transparent mb-1">
-                                    <View className="flex-row items-center justify-between">
-                                        <View className="flex-row items-center gap-3">
-                                            <View className="relative">
-                                                <View className={clsx("rounded-full border-2", isSpeaking ? "border-green-500" : "border-white/10")}>
-                                                    <Image source={{ uri: item.avatar || 'https://via.placeholder.com/150' }} className="w-10 h-10 rounded-full" />
+                                    <View className="p-3 rounded-xl bg-transparent mb-1">
+                                        <View className="flex-row items-center justify-between">
+                                            <View className="flex-row items-center gap-3">
+                                                <View className="relative">
+                                                    <View className={clsx("rounded-full border-2", isSpeaking ? "border-green-500" : "border-white/10")}>
+                                                        <Image source={{ uri: item.avatar || 'https://via.placeholder.com/150' }} className="w-10 h-10 rounded-full" />
+                                                    </View>
+                                                    {isSpeaking && <View className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5 border-2 border-[#121212]"><Mic size={10} color="black" /></View>}
+                                                    {!isSpeaking && item.online && <View className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#121212]" />}
                                                 </View>
-                                                {isSpeaking && <View className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-0.5 border-2 border-[#121212]"><Mic size={10} color="black" /></View>}
-                                                {!isSpeaking && item.online && <View className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#121212]" />}
+                                                <View>
+                                                    <View className="flex-row items-center gap-2">
+                                                        <Text className="text-slate-200 font-bold">{item.name}</Text>
+                                                        {item.role === 'host' && (
+                                                            <View className="bg-yellow-500/20 px-1.5 py-0.5 rounded">
+                                                                <Text className="text-[10px] text-yellow-500 font-bold">HOST</Text>
+                                                            </View>
+                                                        )}
+                                                        {isMe && (
+                                                            <View className="bg-slate-700 px-1.5 py-0.5 rounded">
+                                                                <Text className="text-[10px] text-slate-300 font-bold">BẠN</Text>
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                    <View className="flex-row items-center gap-1 mt-0.5">
+                                                        <View className={clsx("w-1.5 h-1.5 rounded-full", item.online ? "bg-green-500" : "bg-slate-600")} />
+                                                        <Text className="text-slate-500 text-[10px] uppercase font-bold tracking-wide">
+                                                            {item.online ? 'Online' : 'Offline'}
+                                                        </Text>
+                                                    </View>
+                                                </View>
                                             </View>
-                                            <View>
-                                                <View className="flex-row items-center gap-2">
-                                                    <Text className="text-slate-200 font-bold">{item.name}</Text>
-                                                    {item.role === 'host' && (
-                                                        <View className="bg-yellow-500/20 px-1.5 py-0.5 rounded">
-                                                            <Text className="text-[10px] text-yellow-500 font-bold">HOST</Text>
-                                                        </View>
-                                                    )}
-                                                    {isMe && (
-                                                        <View className="bg-slate-700 px-1.5 py-0.5 rounded">
-                                                            <Text className="text-[10px] text-slate-300 font-bold">BẠN</Text>
-                                                        </View>
-                                                    )}
-                                                </View>
-                                                <View className="flex-row items-center gap-1 mt-0.5">
-                                                    <View className={clsx("w-1.5 h-1.5 rounded-full", item.online ? "bg-green-500" : "bg-slate-600")} />
-                                                    <Text className="text-slate-500 text-[10px] uppercase font-bold tracking-wide">
-                                                        {item.online ? 'Online' : 'Offline'}
-                                                    </Text>
-                                                </View>
+
+                                            <View className="flex-row items-center gap-2">
+                                                {!isMe && item.online && (
+                                                    <TouchableOpacity
+                                                        className="w-8 h-8 items-center justify-center"
+                                                        onPress={() => setPeerVolumes(prev => ({ ...prev, [item.id]: isMuted ? 80 : 0 }))}
+                                                    >
+                                                        {isMuted ? <VolumeX size={16} color="#64748b" /> : (volume < 50 ? <Volume1 size={16} color="#cbd5e1" /> : <Volume2 size={16} color="#cbd5e1" />)}
+                                                    </TouchableOpacity>
+                                                )}
+                                                {isHost && !isMe && (
+                                                    <TouchableOpacity
+                                                        className="w-8 h-8 items-center justify-center rounded-full bg-white/5"
+                                                        onPress={() => setUserManageModal({ visible: true, userId: item.id })}
+                                                    >
+                                                        <MoreVertical size={16} color="#94a3b8" />
+                                                    </TouchableOpacity>
+                                                )}
                                             </View>
-                                        </View>
-                                        
-                                        <View className="flex-row items-center gap-2">
-                                            {!isMe && item.online && (
-                                                <TouchableOpacity
-                                                    className="w-8 h-8 items-center justify-center"
-                                                    onPress={() => setPeerVolumes(prev => ({ ...prev, [item.id]: isMuted ? 80 : 0 }))}
-                                                >
-                                                    {isMuted ? <VolumeX size={16} color="#64748b" /> : (volume < 50 ? <Volume1 size={16} color="#cbd5e1" /> : <Volume2 size={16} color="#cbd5e1" />)}
-                                                </TouchableOpacity>
-                                            )}
-                                            {isHost && !isMe && (
-                                                <TouchableOpacity
-                                                    className="w-8 h-8 items-center justify-center rounded-full bg-white/5"
-                                                    onPress={() => setUserManageModal({ visible: true, userId: item.id })}
-                                                >
-                                                    <MoreVertical size={16} color="#94a3b8" />
-                                                </TouchableOpacity>
-                                            )}
                                         </View>
                                     </View>
-                                </View>
                                 );
                             }}
                         />
@@ -994,7 +998,7 @@ export default function WatchPartyRoomPage() {
                                         <View className="bg-transparent border border-slate-600 rounded px-1.5 py-0.5 self-start mb-3">
                                             <Text className="text-slate-400 text-xs">{getSafeYear(roomData.movie?.release_date)}</Text>
                                         </View>
-                                        
+
                                         {roomData.episode && (
                                             <Text className="text-red-500 font-bold mb-3">
                                                 Đang phát: {roomData.episode.title || `Tập ${roomData.episode.episode_number}`}
@@ -1018,9 +1022,9 @@ export default function WatchPartyRoomPage() {
 
                                         <View className="flex-row gap-1.5 flex-wrap">
                                             {roomData.movie?.movie_genres?.map((g: any) => (
-                                                 <View key={g.genre?.id || g.id} className="bg-slate-800 px-2 py-0.5 rounded">
-                                                     <Text className="text-slate-200 text-[10px]">{g.genre?.name}</Text>
-                                                 </View>
+                                                <View key={g.genre?.id || g.id} className="bg-slate-800 px-2 py-0.5 rounded">
+                                                    <Text className="text-slate-200 text-[10px]">{g.genre?.name}</Text>
+                                                </View>
                                             ))}
                                         </View>
                                     </View>
@@ -1088,7 +1092,7 @@ export default function WatchPartyRoomPage() {
                     </TouchableOpacity>
                 </Modal>
 
-                            <Modal transparent visible={showJoinCodeModal} animationType="fade">
+                <Modal transparent visible={showJoinCodeModal} animationType="fade">
                     <View className="flex-1 bg-black/80 justify-center items-center p-5">
                         <View className="bg-[#1F1F1F] w-full max-w-sm rounded-xl border border-slate-700 p-6 items-center">
                             <Lock size={40} color="#ef4444" className="mb-4" />
@@ -1103,14 +1107,14 @@ export default function WatchPartyRoomPage() {
                                 autoCapitalize="characters"
                             />
                             <View className="flex-row gap-3 w-full">
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     className="flex-1 p-3 bg-slate-800 rounded-lg flex-row items-center justify-center gap-2"
                                     onPress={() => navigation.goBack()}
                                 >
                                     <LogOut size={18} color="white" />
                                     <Text className="text-white font-bold">Thoát</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     className="flex-1 p-3 bg-red-600 rounded-lg flex-row items-center justify-center gap-2"
                                     onPress={async () => {
                                         if (joinCodeInput.trim().toUpperCase() === roomData?.join_code) {
