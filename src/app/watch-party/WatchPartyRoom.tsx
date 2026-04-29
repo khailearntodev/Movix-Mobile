@@ -508,7 +508,7 @@ export default function WatchPartyRoomPage() {
         if (!player) return;
 
         const playingSub = player.addListener('playingChange', (payload) => {
-            const isPlayingNow = payload.playing;
+            const isPlayingNow = payload.isPlaying;
             if (isSocketAction.current || !isHost || !socketRef.current) return;
 
             console.log(`[HOST] Play/Pause detected: ${isPlayingNow}`);
