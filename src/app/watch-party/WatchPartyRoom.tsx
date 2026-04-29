@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
     View, Text, ScrollView, TouchableOpacity, Image, TextInput,
     FlatList, Modal, Alert, Clipboard, Dimensions, KeyboardAvoidingView,
@@ -9,7 +8,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Video, ResizeMode, AVPlaybackStatus, AVPlaybackStatusSuccess } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { io, Socket } from 'socket.io-client';
 import EmojiPicker from 'rn-emoji-keyboard';
 import {
@@ -43,6 +42,29 @@ const getSafeYear = (dateString: string | null | undefined) => {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
     return date.getFullYear().toString();
+};
+
+const getSafeVideoUrl = (url: string | null | undefined) => {
+    if (!url) return "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    
+    let processedUrl = url;
+    
+    if (processedUrl.includes('localhost') || processedUrl.includes('127.0.0.1')) {
+        const host = SOCKET_URL.replace('http://', '').replace('https://', '').split(':')[0];
+        processedUrl = processedUrl.replace('localhost', host).replace('127.0.0.1', host);
+    }
+    
+    if (!processedUrl.startsWith('http')) {
+        const cleanPath = processedUrl.startsWith('/') ? processedUrl.substring(1) : processedUrl;
+        processedUrl = `${SOCKET_URL}/${cleanPath}`;
+    }
+
+    // Force https for external sources to avoid ATS issues on iOS
+    if (processedUrl.startsWith('http://') && !processedUrl.includes('192.168.') && !processedUrl.includes('10.0.')) {
+        processedUrl = processedUrl.replace('http://', 'https://');
+    }
+
+    return processedUrl;
 };
 
 const getSafeDate = (dateString: string | null | undefined) => {
@@ -135,17 +157,29 @@ const InviteModal = ({ visible, onClose, roomData }: { visible: boolean; onClose
 export default function WatchPartyRoomPage() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const route = useRoute<RouteProp<RootStackParamList, 'WatchPartyRoom'>>();
-
     const roomId = (route.params as any)?.roomId as string;
+
     const { user, isLoading: authLoading } = useAuth();
 
     const socketRef = useRef<Socket | null>(null);
-    const videoRef = useRef<Video>(null);
     const isSocketAction = useRef(false);
     const lastTimeRef = useRef(0);
     const flatListRef = useRef<FlatList>(null);
 
     const [roomData, setRoomData] = useState<RoomData | null>(null);
+
+    // Expo Video Player
+    const videoUrl = useMemo(() => {
+        const rawUrl = roomData?.episode?.video_url || roomData?.movie?.video_url || 
+                       roomData?.episode?.videoUrl || roomData?.movie?.videoUrl;
+        return getSafeVideoUrl(rawUrl) || "";
+    }, [roomData]);
+
+    const player = useVideoPlayer(videoUrl, p => {
+        p.loop = false;
+        p.play();
+    });
+
     const [messages, setMessages] = useState<any[]>([]);
     const [members, setMembers] = useState<WatchPartyMember[]>([]);
     const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([]);
@@ -154,6 +188,8 @@ export default function WatchPartyRoomPage() {
     const [showEmoji, setShowEmoji] = useState(false);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [isPendingApproval, setIsPendingApproval] = useState(false);
+    const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [videoError, setVideoError] = useState<string | null>(null);
 
     const [showJoinCodeModal, setShowJoinCodeModal] = useState(false);
     const [joinCodeInput, setJoinCodeInput] = useState("");
@@ -212,6 +248,13 @@ export default function WatchPartyRoomPage() {
                     hostId: res.party?.host_user_id,
                     userId: user?.id,
                     isHostFromBE: res.isHost
+                });
+
+                const rawVideoUrl = res.party?.episode?.video_url || res.party?.movie?.video_url;
+                const safeUrl = getSafeVideoUrl(rawVideoUrl);
+                console.log("[DEBUG] Video URL Resolution:", {
+                    raw: rawVideoUrl,
+                    resolved: safeUrl
                 });
 
                 setRoomData(res.party);
@@ -348,33 +391,28 @@ export default function WatchPartyRoomPage() {
 
             // ĐỒNG BỘ VIDEO TỪ SERVER
             socketInstance.on('wp:sync_player', async ({ action, currentTime: remoteTime }: { action: 'play' | 'pause' | 'seek', currentTime: number }) => {
-                if (!videoRef.current) return;
+                if (!player) return;
 
                 isSocketAction.current = true;
 
-                const status = await videoRef.current.getStatusAsync();
-                const localTime = (status as AVPlaybackStatusSuccess).positionMillis / 1000 || 0;
+                const localTime = player.currentTime;
 
                 // Sync time nếu lệch quá 2s
                 if (action === 'seek' || Math.abs(localTime - remoteTime) > 2) {
                     console.log(`[SYNC] Seek to ${remoteTime}`);
-                    await videoRef.current.setPositionAsync(remoteTime * 1000);
+                    player.currentTime = remoteTime;
                     setCurrentTime(remoteTime);
                     lastTimeRef.current = remoteTime;
                 }
 
                 if (action === 'play') {
-                    if (status.isLoaded && !status.isPlaying) {
-                        console.log(`[SYNC] Play`);
-                        await videoRef.current.playAsync();
-                        setIsPlaying(true);
-                    }
+                    console.log(`[SYNC] Play`);
+                    player.play();
+                    setIsPlaying(true);
                 } else if (action === 'pause') {
-                    if (status.isLoaded && status.isPlaying) {
-                        console.log(`[SYNC] Pause`);
-                        await videoRef.current.pauseAsync();
-                        setIsPlaying(false);
-                    }
+                    console.log(`[SYNC] Pause`);
+                    player.pause();
+                    setIsPlaying(false);
                 }
 
                 setTimeout(() => {
@@ -384,36 +422,33 @@ export default function WatchPartyRoomPage() {
 
             // NHẬN YÊU CẦU ĐỒNG BỘ TỪ VIEWER MỚI VÀO (CHỈ HOST XỬ LÝ)
             socketInstance.on('wp:get_host_time', async ({ requesterId }) => {
-                if (!isHostRef.current || !videoRef.current) return;
+                if (!isHostRef.current || !player) return;
 
-                const status = await videoRef.current.getStatusAsync();
-                if (status.isLoaded) {
-                    const localTime = status.positionMillis / 1000 || 0;
-                    socketInstance?.emit('wp:send_host_time', {
-                        roomId,
-                        requesterId,
-                        currentTime: localTime,
-                        isPlaying: status.isPlaying
-                    });
-                }
+                const localTime = player.currentTime;
+                socketInstance?.emit('wp:send_host_time', {
+                    roomId,
+                    requesterId,
+                    currentTime: localTime,
+                    isPlaying: player.playing
+                });
             });
 
             // VIEWER NHẬN DỮ LIỆU ĐỒNG BỘ TỪ HOST KHI VỪA VÀO PHÒNG
             socketInstance.on('wp:sync_initial', async ({ targetUserId, currentTime: remoteTime, isPlaying: remoteIsPlaying }) => {
-                if (user.id !== targetUserId || !videoRef.current) return;
+                if (user.id !== targetUserId || !player) return;
 
                 isSocketAction.current = true;
                 console.log(`[SYNC INIT] Syncing new viewer to ${remoteTime}s and playing: ${remoteIsPlaying}`);
 
-                await videoRef.current.setPositionAsync(remoteTime * 1000);
+                player.currentTime = remoteTime;
                 setCurrentTime(remoteTime);
                 lastTimeRef.current = remoteTime;
 
                 if (remoteIsPlaying) {
-                    await videoRef.current.playAsync();
+                    player.play();
                     setIsPlaying(true);
                 } else {
-                    await videoRef.current.pauseAsync();
+                    player.pause();
                     setIsPlaying(false);
                 }
 
@@ -469,58 +504,73 @@ export default function WatchPartyRoomPage() {
 
     }, [roomId, user?.id, isAuthorized, isPendingApproval]);
 
-    const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
-        if (!status.isLoaded) return;
+    useEffect(() => {
+        if (!player) return;
 
-        const currentSecs = status.positionMillis / 1000;
-        setCurrentTime(currentSecs);
+        const playingSub = player.addListener('playingChange', (payload) => {
+            const isPlayingNow = payload.playing;
+            if (isSocketAction.current || !isHost || !socketRef.current) return;
 
-        if (status.durationMillis) {
-            setDuration(status.durationMillis / 1000);
-        }
-
-        if (status.rate && status.rate !== 1.0) {
-            videoRef.current?.setRateAsync(1.0, true);
-        }
-
-        if (isSocketAction.current || !isHost || !socketRef.current) {
-            lastTimeRef.current = currentSecs;
-            return;
-        }
-
-        const diff = Math.abs(currentSecs - lastTimeRef.current);
-        const isSeeking = diff > 2;
-
-        if (isSeeking && status.isPlaying) {
-            console.log(`[HOST] User seeked logic detected: ${lastTimeRef.current} -> ${currentSecs}`);
-            socketRef.current.emit('wp:seek_action', { roomId, currentTime: currentSecs });
-            lastTimeRef.current = currentSecs;
-            return;
-        } else if (isSeeking && !status.isPlaying) {
-            console.log(`[HOST] User seeked (paused) logic detected: ${lastTimeRef.current} -> ${currentSecs}`);
-            socketRef.current.emit('wp:seek_action', { roomId, currentTime: currentSecs });
-            lastTimeRef.current = currentSecs;
-            return;
-        }
-
-        if (status.isPlaying !== isPlaying) {
-            console.log(`[HOST] Play/Pause detected: ${status.isPlaying}`);
-            const action = status.isPlaying ? 'play' : 'pause';
-            setIsPlaying(status.isPlaying);
+            console.log(`[HOST] Play/Pause detected: ${isPlayingNow}`);
+            const action = isPlayingNow ? 'play' : 'pause';
+            setIsPlaying(isPlayingNow);
             socketRef.current.emit("wp:sync_action", {
                 roomId,
                 action,
-                currentTime: currentSecs
+                currentTime: player.currentTime
             });
-        }
+        });
 
-        lastTimeRef.current = currentSecs;
-    };
+        const timeSub = player.addListener('timeUpdate', (event) => {
+            const currentSecs = event.currentTime;
+            setCurrentTime(currentSecs);
+            
+            if (player.duration) {
+                setDuration(player.duration);
+            }
+
+            if (isSocketAction.current || !isHost || !socketRef.current) {
+                lastTimeRef.current = currentSecs;
+                return;
+            }
+
+            const diff = Math.abs(currentSecs - lastTimeRef.current);
+            const isSeeking = diff > 2;
+
+            if (isSeeking) {
+                console.log(`[HOST] User seeked logic detected: ${lastTimeRef.current} -> ${currentSecs}`);
+                socketRef.current.emit('wp:seek_action', { roomId, currentTime: currentSecs });
+            }
+
+            lastTimeRef.current = currentSecs;
+        });
+
+        const statusSub = player.addListener('statusChange', (payload) => {
+            if (payload.status === 'loading') {
+                setIsVideoLoading(true);
+                setVideoError(null);
+            } else if (payload.status === 'error') {
+                setIsVideoLoading(false);
+                const errorMsg = payload.error?.message || "Đã xảy ra lỗi khi tải video";
+                setVideoError(errorMsg);
+                Alert.alert("Lỗi Video", errorMsg);
+            } else {
+                setIsVideoLoading(false);
+                setVideoError(null);
+            }
+        });
+
+        return () => {
+            playingSub.remove();
+            timeSub.remove();
+            statusSub.remove();
+        };
+    }, [player, isHost, roomId]);
 
     const handleSeek = async (newTimeSeconds: number) => {
-        if (!isHost || !videoRef.current || !socketRef.current) return;
+        if (!isHost || !player || !socketRef.current) return;
 
-        await videoRef.current.setPositionAsync(newTimeSeconds * 1000);
+        player.currentTime = newTimeSeconds;
         setCurrentTime(newTimeSeconds);
         socketRef.current.emit('wp:seek_action', {
             roomId,
@@ -529,22 +579,21 @@ export default function WatchPartyRoomPage() {
     };
 
     useEffect(() => {
-        if (!isHost || !roomData?.scheduled_at || roomData.started_at || !videoRef.current) return;
+        if (!isHost || !roomData?.scheduled_at || roomData.started_at || !player) return;
         const scheduleTime = new Date(roomData.scheduled_at).getTime();
         const checkTimer = setInterval(async () => {
             if (Date.now() >= scheduleTime) {
-                const status = await videoRef.current!.getStatusAsync();
-                if (status.isLoaded && !status.isPlaying) {
+                if (!player.playing) {
                     Alert.alert("Thông báo", "Đến giờ chiếu! Đang bắt đầu phát video.");
-                    videoRef.current!.playAsync();
+                    player.play();
                     setIsPlaying(true);
-                    socketRef.current?.emit('wp:sync_action', { roomId, action: 'play', currentTime: status.positionMillis / 1000 });
+                    socketRef.current?.emit('wp:sync_action', { roomId, action: 'play', currentTime: player.currentTime });
                 }
                 clearInterval(checkTimer);
             }
         }, 3000);
         return () => clearInterval(checkTimer);
-    }, [isHost, roomData]);
+    }, [isHost, roomData, player]);
 
     const handleManualSync = () => {
         if (isHost) {
@@ -714,18 +763,30 @@ export default function WatchPartyRoomPage() {
                 </View>
 
                 {/* 1. Video Player Area */}
-                <View className="w-full aspect-video bg-black relative group z-10">
-                    <Video
-                        ref={videoRef}
-                        source={{ uri: roomData?.episode?.video_url || roomData?.movie?.video_url || "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" }}
+                <View className="w-full aspect-video bg-black relative group z-10 justify-center items-center">
+                    <VideoView
+                        player={player}
                         style={{ width: '100%', height: '100%' }}
-                        resizeMode={ResizeMode.CONTAIN}
-                        onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-                        useNativeControls={isHost}
-                        rate={1.0}
+                        contentFit="contain"
+                        nativeControls={isHost}
                     />
 
-                    {!isPlaying && !isHost && (
+                    {isVideoLoading && !videoError && (
+                        <View className="absolute inset-0 z-20 justify-center items-center bg-black/50">
+                            <ActivityIndicator size="large" color="#ef4444" />
+                            <Text className="text-white text-xs mt-2 font-medium">Đang tải phim...</Text>
+                        </View>
+                    )}
+
+                    {videoError && (
+                        <View className="absolute inset-0 z-30 justify-center items-center bg-black/80 px-4">
+                            <AlertCircle color="#ef4444" size={40} className="mb-2" />
+                            <Text className="text-white text-center font-bold text-lg mb-1">Không thể phát video</Text>
+                            <Text className="text-zinc-400 text-center text-sm">{videoError}</Text>
+                        </View>
+                    )}
+
+                    {!isPlaying && !isHost && !isVideoLoading && !videoError && (
                         <View className="absolute inset-0 bg-black/40 items-center justify-center pointer-events-none">
                             <ActivityIndicator color="white" />
                             <Text className="text-white opacity-90 mt-2 font-bold">Đang chờ Host phát...</Text>

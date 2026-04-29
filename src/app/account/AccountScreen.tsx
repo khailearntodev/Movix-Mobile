@@ -1,14 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMyProfile, UserProfile } from '@/services/user.service';
 import { subscriptionService } from '@/services/subscription.service';
 import { UserSubscription } from '@/types/subscription';
 import { AIChatButton } from '@/components/common/AIChatButton';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AccountScreen = () => {
     const navigation = useNavigation<any>();
+    const { signOut } = useAuth();
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +35,23 @@ const AccountScreen = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+    
+    const handleLogout = () => {
+        Alert.alert(
+            "Đăng xuất",
+            "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?",
+            [
+                { text: "Hủy", style: "cancel" },
+                { 
+                    text: "Đăng xuất", 
+                    style: "destructive",
+                    onPress: async () => {
+                        await signOut();
+                    }
+                }
+            ]
+        );
     };
 
     const isPremium = userSubscription && 
@@ -141,7 +160,7 @@ const AccountScreen = () => {
                     {renderMenuItem(<Crown size={22} color="#eab308" />, "Gói dịch vụ", () => navigation.navigate('Subscription'))}
                     {renderMenuItem(<Settings size={22} color="white" />, "Cài đặt ứng dụng", () => { })}
                     {renderMenuItem(<User size={22} color="white" />, "Tài khoản", () => navigation.navigate('EditProfile'))}
-                    {renderMenuItem(<LogOut size={22} color="#ef4444" />, "Đăng xuất", () => { }, "#ef4444")}
+                    {renderMenuItem(<LogOut size={22} color="#ef4444" />, "Đăng xuất", handleLogout, "#ef4444")}
                 </View>
 
                 <Text className="text-zinc-600 text-center text-xs mb-8">Movix Mobile v1.0.0</Text>
