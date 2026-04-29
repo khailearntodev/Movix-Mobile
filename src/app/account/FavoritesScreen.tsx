@@ -39,14 +39,18 @@ const FavoritesScreen = () => {
         return path.startsWith('http') ? path : `https://image.tmdb.org/t/p/w500${path}`;
     };
 
-    const renderItem = ({ item }: { item: Movie }) => (
+    const renderItem = ({ item }: { item: Movie | any }) => {
+        const poster = item.posterUrl || item.poster_url;
+        const releaseYear = item.releaseYear || (item.release_date ? item.release_date.split('-')[0] : 'N/A');
+        
+        return (
         <TouchableOpacity 
             className="flex-1 m-2"
             onPress={() => navigation.navigate("MovieDetail", { movie: item })}
         >
             <View className="relative w-full aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800">
                 <Image
-                    source={{ uri: getImageUrl(item.posterUrl) }}
+                    source={{ uri: getImageUrl(poster) }}
                     className="w-full h-full"
                     resizeMode="cover"
                 />
@@ -55,9 +59,9 @@ const FavoritesScreen = () => {
                 </View>
             </View>
             <Text className="text-white mt-2 font-bold text-sm" numberOfLines={1}>{item.title}</Text>
-            <Text className="text-zinc-500 text-xs" numberOfLines={1}>{item.vote_average?.toFixed(1)} ★ • {item.releaseYear}</Text>
+            <Text className="text-zinc-500 text-xs" numberOfLines={1}>{item.vote_average?.toFixed(1)} ★ • {releaseYear}</Text>
         </TouchableOpacity>
-    );
+    )};
 
     return (
         <View className="flex-1 bg-black pt-12">

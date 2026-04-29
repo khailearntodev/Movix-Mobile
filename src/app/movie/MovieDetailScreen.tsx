@@ -291,8 +291,8 @@ export default function MovieDetailScreen() {
             </View>
             <View className="items-center">
               <Clock size={20} color="#a1a1aa" style={{ marginBottom: 4 }} />
-              <Text className="text-white font-bold text-lg">{parseInt((movieData.duration || '0').toString()) || '?'}</Text>
-              <Text className="text-zinc-500 text-xs">Phút</Text>
+              <Text className="text-white font-bold text-base">{movieData.duration || '?'}</Text>
+              <Text className="text-zinc-500 text-xs">Thời lượng</Text>
             </View>
             <View className="items-center">
               <Calendar size={20} color="#a1a1aa" style={{ marginBottom: 4 }} />

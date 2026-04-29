@@ -144,7 +144,7 @@ export default function AIChatScreen() {
                     return (
                         <Text 
                             key={index} 
-                            onPress={() => part.slug && navigation.navigate("MovieDetail", { movie: { slug: part.slug } } as any)}
+                            onPress={() => part.slug && navigation.navigate("MovieDetail", { movie: { slug: part.slug, id: part.slug } } as any)}
                             className="text-red-500 font-bold underline"
                         >
                             {part.label}
