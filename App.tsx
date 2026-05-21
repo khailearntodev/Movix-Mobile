@@ -31,6 +31,9 @@ import WatchMovieScreen from "./src/app/movie/WatchMovieScreen";
 import AIChatScreen from "./src/app/ai/AIChatScreen";
 import PeopleScreen from "./src/app/people/PeopleScreen";
 import PersonDetailScreen from "./src/app/people/PersonDetailScreen";
+import BlogDetailScreen from "./src/app/blog/BlogDetailScreen";
+import CreateBlogScreen from "./src/app/blog/CreateBlogScreen";
+import BlogSearchScreen from "./src/app/blog/BlogSearchScreen";
 import Toast from "react-native-toast-message";
 
 LogBox.ignoreLogs([
@@ -71,6 +74,17 @@ export default function App() {
             <Stack.Screen name="AIChat" component={AIChatScreen} />
             <Stack.Screen name="People" component={PeopleScreen} />
             <Stack.Screen name="PersonDetail" component={PersonDetailScreen} />
+            <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
+            <Stack.Screen 
+              name="CreateBlog" 
+              component={CreateBlogScreen} 
+              options={{ presentation: "modal", animation: "slide_from_bottom" }} 
+            />
+            <Stack.Screen 
+              name="BlogSearch" 
+              component={BlogSearchScreen} 
+              options={{ animation: "fade" }} 
+            />
 
             {/* Account Group */}
             <Stack.Screen name="Playlist" component={PlaylistScreen} />

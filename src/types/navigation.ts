@@ -25,4 +25,7 @@ export type RootStackParamList = {
   AIChat: undefined;
   People: undefined;
   PersonDetail: { personId: string };
+  BlogDetail: { id: string; slug: string };
+  CreateBlog: undefined;
+  BlogSearch: undefined;
 };
