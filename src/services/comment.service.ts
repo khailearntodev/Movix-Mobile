@@ -1,16 +1,16 @@
 import api from './api.service';
 import { CommentData, CommentWithReplies } from '@/types/comment';
 
-export const getComments = async (movieId: string) => {
+export const getComments = async (params: { movieId?: string, postId?: string }) => {
   const { data } = await api.get<CommentWithReplies[]>('/comments', {
-    params: { movieId },
+    params,
   });
   return data;
 };
 
-
 interface PostCommentPayload {
-  movieId: string;
+  movieId?: string;
+  postId?: string;
   comment: string;
   parentCommentId?: string;
   isSpoiler?: boolean;
