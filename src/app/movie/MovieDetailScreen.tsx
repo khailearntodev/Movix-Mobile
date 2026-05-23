@@ -115,7 +115,7 @@ export default function MovieDetailScreen() {
     setIsSpoiler,
     replyingTo,
     setReplyingTo
-  } = useComments(movieData?.id?.toString() || "", showToast);
+  } = useComments({ movieId: movieData?.id?.toString() || "" }, showToast);
 
   const getImageUrl = (path: string | null | undefined) => {
     if (!path) return 'https://via.placeholder.com/500x750?text=No+Image';

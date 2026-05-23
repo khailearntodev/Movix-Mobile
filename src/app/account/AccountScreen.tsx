@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu } from 'lucide-react-native';
+import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu, Smartphone } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMyProfile, UserProfile } from '@/services/user.service';
 import { subscriptionService } from '@/services/subscription.service';
@@ -23,7 +23,9 @@ const AccountScreen = () => {
 
     const loadUserProfile = async () => {
         try {
-            setIsLoading(true);
+            if (!userProfile || !userSubscription) {
+                setIsLoading(true);
+            }
             const [profileData, subData] = await Promise.all([
                 getMyProfile(),
                 subscriptionService.getUserSubscription().catch(() => null)
@@ -88,7 +90,7 @@ const AccountScreen = () => {
             <ScrollView className="flex-1 px-4">
 
                 {/* User Profile */}
-                {isLoading ? (
+                {isLoading && !userProfile ? (
                     <View className="items-center mb-8 h-32 justify-center">
                         <ActivityIndicator color="#ef4444" />
                     </View>
@@ -160,6 +162,7 @@ const AccountScreen = () => {
                     {renderMenuItem(<Crown size={22} color="#eab308" />, "Gói dịch vụ", () => navigation.navigate('Subscription'))}
                     {renderMenuItem(<Settings size={22} color="white" />, "Cài đặt ứng dụng", () => { })}
                     {renderMenuItem(<User size={22} color="white" />, "Tài khoản", () => navigation.navigate('EditProfile'))}
+                    {renderMenuItem(<Smartphone size={22} color="white" />, "Quản lý thiết bị", () => navigation.navigate('Devices'))}
                     {renderMenuItem(<LogOut size={22} color="#ef4444" />, "Đăng xuất", handleLogout, "#ef4444")}
                 </View>
 

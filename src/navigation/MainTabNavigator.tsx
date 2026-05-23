@@ -1,10 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Search, Users, Video, User } from 'lucide-react-native';
+import { Home, Search, Users, Video, User, MessageSquare } from 'lucide-react-native';
 import HomeScreen from '../app/home/HomeScreen';
 import PeopleScreen from '../app/people/PeopleScreen';
 import SearchScreen from '../app/search/SearchScreen';
 import WatchPartyScreen from '../app/watch-party/WatchPartyScreen';
+import BlogScreen from '../app/blog/BlogScreen';
 import ProfileStackNavigator from './ProfileStackNavigator';
 import { View, Text, Platform } from 'react-native';
 import { useGlobalNotifications } from '../contexts/NotificationContext';
@@ -20,15 +21,15 @@ export default function MainTabNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#09090b', // zinc-950
-          borderTopColor: '#27272a', // zinc-800
-          height: Platform.OS === 'ios' ? 88 : 60,
+          backgroundColor: '#09090b',
+          borderTopColor: '#27272a',
+          height: Platform.OS === 'ios' ? 88 : 64,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#dc2626', // red-600
-        tabBarInactiveTintColor: '#71717a', // zinc-500
-        tabBarLabelStyle: { fontSize: 12, fontWeight: '500' },
+        tabBarActiveTintColor: '#EF2B2D',
+        tabBarInactiveTintColor: '#8F8F99',
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginTop: 4 },
       }}
     >
       <Tab.Screen 
@@ -48,6 +49,14 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen 
+        name="Blog" 
+        component={BlogScreen} 
+        options={{
+            tabBarLabel: 'Cộng đồng',
+            tabBarIcon: ({ color }) => <MessageSquare color={color} size={24} />
+        }}
+      />
+      <Tab.Screen 
         name="Search" 
         component={SearchScreen} 
         options={{
@@ -59,7 +68,7 @@ export default function MainTabNavigator() {
         name="WatchParty" 
         component={WatchPartyScreen} 
         options={{
-            tabBarLabel: 'Xem chung',
+            tabBarLabel: 'Xem',
             tabBarIcon: ({ color }) => <Video color={color} size={24} />
         }}
       />

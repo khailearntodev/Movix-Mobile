@@ -3,7 +3,10 @@ import { useState, useEffect } from "react";
 import { getComments, postComment } from "../services/comment.service";
 import { CommentWithReplies, CommentData } from "../types/comment";
 
-export const useComments = (movieId: string, showToast: (message: string, type: "success" | "warning" | "error") => void) => {
+export const useComments = (
+  target: { movieId?: string; postId?: string }, 
+  showToast: (message: string, type: "success" | "warning" | "error") => void
+) => {
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -13,12 +16,13 @@ export const useComments = (movieId: string, showToast: (message: string, type: 
 
   useEffect(() => {
     fetchComments();
-  }, [movieId]);
+  }, [target.movieId, target.postId]);
 
   const fetchComments = async () => {
+    if (!target.movieId && !target.postId) return;
     try {
       setIsLoadingComments(true);
-      const data = await getComments(movieId);
+      const data = await getComments(target);
       setComments(data);
     } catch (error) {
       console.error("Failed to fetch comments:", error);
@@ -33,7 +37,7 @@ export const useComments = (movieId: string, showToast: (message: string, type: 
     try {
       setIsPostingComment(true);
       await postComment({
-        movieId: movieId,
+        ...target,
         comment: newComment,
         isSpoiler,
         parentCommentId: replyingTo?.id
