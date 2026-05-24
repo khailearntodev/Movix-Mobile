@@ -9,6 +9,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { watchPartyService } from '@/services/watch-party.service';
+import { subscriptionService } from '@/services/subscription.service';
 import { AIChatButton } from '@/components/common/AIChatButton';
 
 export default function WatchPartyScreen() {
@@ -58,6 +59,23 @@ export default function WatchPartyScreen() {
         }
     }
 
+    const handleCreateParty = async () => {
+        const canCreate = await subscriptionService.canCreateWatchParty();
+        if (!canCreate) {
+            Alert.alert(
+                "Yêu cầu nâng cấp",
+                "Tính năng tạo phòng Xem chung chỉ dành cho thành viên có gói đăng ký (Premium).",
+                [
+                    { text: "Nâng cấp ngay", onPress: () => navigation.navigate('Subscription' as never) },
+                    { text: "Đóng", style: "cancel" }
+                ]
+            );
+            return;
+        }
+        setIsCreateModalOpen(true);
+    };
+
+
     const FilterButton = ({ label, value, activeColor }: { label: string, value: typeof filter, activeColor: string }) => (
         <TouchableOpacity
             onPress={() => setFilter(value)}
@@ -87,7 +105,7 @@ export default function WatchPartyScreen() {
                         <View className="flex-row gap-3 mt-2">
                             <TouchableOpacity
                                 className="flex-1 bg-red-600 rounded-lg flex-row items-center justify-center py-3 gap-2 shadow-lg shadow-red-900/20"
-                                onPress={() => setIsCreateModalOpen(true)}
+                                onPress={handleCreateParty}
                             >
                                 <Plus size={18} color="white" />
                                 <Text className="text-white font-bold text-sm">Tạo phòng</Text>

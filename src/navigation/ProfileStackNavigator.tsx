@@ -9,6 +9,7 @@ import NotificationsScreen from '../app/account/NotificationsScreen';
 import EditProfileScreen from '../app/account/EditProfileScreen';
 import ChangePasswordScreen from '../app/account/ChangePasswordScreen';
 import SubscriptionScreen from '../app/account/SubscriptionScreen';
+import TransactionsScreen from '../app/account/TransactionsScreen';
 import DownloadsScreen from '../app/account/DownloadsScreen';
 import DevicesScreen from '../app/account/DevicesScreen';
 
@@ -28,6 +29,10 @@ export default function ProfileStackNavigator() {
             <Stack.Screen
                 name="Subscription"
                 component={SubscriptionScreen}
+            />
+            <Stack.Screen
+                name="Transactions"
+                component={TransactionsScreen}
             />
             <Stack.Screen
                 name="Downloads"

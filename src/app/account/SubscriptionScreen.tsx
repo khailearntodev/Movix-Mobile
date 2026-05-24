@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { Check, Crown, ChevronLeft } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { subscriptionService } from '@/services/subscription.service';
 import { SubscriptionPlan, UserSubscription } from '@/types/subscription';
+import { initiateCheckoutWithRetry } from '@/services/payment.service';
 
 const SubscriptionScreen = () => {
     const navigation = useNavigation();
@@ -33,17 +34,37 @@ const SubscriptionScreen = () => {
             setIsLoading(false);
         }
     };
-    
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
     const isPlanActive = (planId: string) => {
         if (!currentSubscription) return false;
-        return currentSubscription.plan_id === planId && 
-               currentSubscription.status === 'ACTIVE' && 
-               new Date(currentSubscription.end_date) > new Date();
+        return currentSubscription.plan_id === planId &&
+            currentSubscription.status === 'ACTIVE' &&
+            new Date(currentSubscription.end_date) > new Date();
     };
+
+    const handleUpgrade = async (planId: string) => {
+        try {
+            setIsLoading(true);
+            const checkoutData = await initiateCheckoutWithRetry(planId);
+            if (checkoutData?.paymentData?.paymentUrl) {
+                const supported = await Linking.canOpenURL(checkoutData.paymentData.paymentUrl);
+                if (supported) {
+                    await Linking.openURL(checkoutData.paymentData.paymentUrl);
+                } else {
+                    Alert.alert('Lỗi', 'Không thể mở trang thanh toán.');
+                }
+            }
+        } catch (error: any) {
+            Alert.alert('Lỗi', error.message || 'Không thể tạo phiên thanh toán.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     if (isLoading) {
         return (
@@ -75,16 +96,20 @@ const SubscriptionScreen = () => {
 
                 {plans.map((plan) => {
                     const isActive = isPlanActive(plan.id);
-                    
+
                     let benefitsList: string[] = [];
-                    if (plan.description) benefitsList.push(plan.description);
-                    if (plan.can_create_watch_party) benefitsList.push(`Tạo phòng xem chung (tối đa ${plan.max_watch_party_participants} người)`);
-                    if (plan.can_kick_mute_members) benefitsList.push("Quyền quản lý phòng (Kick/Mute)");
-                    if (plan.benefits) {
-                        if (plan.benefits.no_ads) benefitsList.push("Xem phim không quảng cáo");
-                        if (plan.benefits.quality) benefitsList.push(`Chất lượng ${plan.benefits.quality}`);
-                        if (plan.benefits.downloads) benefitsList.push("Tải xuống không giới hạn");
+                    if (Array.isArray(plan.benefits)) {
+                        benefitsList = plan.benefits;
+                    } else if (plan.benefits && Array.isArray(plan.benefits.features)) {
+                        benefitsList = plan.benefits.features;
+                    } else {
+                        // Fallback logic
+                        if (plan.can_create_watch_party) benefitsList.push(`Tạo phòng xem chung (tối đa ${plan.max_watch_party_participants} người)`);
+                        if (plan.can_kick_mute_members) benefitsList.push("Quyền quản lý phòng (Kick/Mute)");
+                        if (plan.benefits?.no_ads) benefitsList.push("Xem phim không quảng cáo");
                     }
+
+                    benefitsList = benefitsList.filter(f => !f.toLowerCase().includes('remote control'));
 
                     return (
                         <View key={plan.id} className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-6 relative overflow-hidden">
@@ -96,7 +121,7 @@ const SubscriptionScreen = () => {
 
                             <Text className="text-yellow-500 font-bold text-lg mb-2">{plan.name.toUpperCase()}</Text>
                             <Text className="text-white text-3xl font-bold mb-6">
-                                {formatCurrency(plan.price)} 
+                                {formatCurrency(plan.price)}
                                 <Text className="text-zinc-500 text-lg font-normal"> / {plan.duration_days} ngày</Text>
                             </Text>
 
@@ -110,12 +135,18 @@ const SubscriptionScreen = () => {
                             </View>
 
                             {!isActive ? (
-                                <TouchableOpacity className="bg-yellow-500 w-full p-4 rounded-xl items-center">
+                                <TouchableOpacity
+                                    className="bg-yellow-500 w-full p-4 rounded-xl items-center"
+                                    onPress={() => handleUpgrade(plan.id)}
+                                >
                                     <Text className="text-black font-bold text-lg uppercase">Nâng cấp ngay</Text>
                                 </TouchableOpacity>
                             ) : (
-                                <TouchableOpacity className="bg-zinc-800 w-full p-4 rounded-xl items-center border border-zinc-700">
-                                    <Text className="text-zinc-300 font-medium">Quản lý gói đăng ký</Text>
+                                <TouchableOpacity
+                                    className="bg-zinc-800 w-full p-4 rounded-xl items-center border border-zinc-700"
+                                    onPress={() => navigation.navigate('Transactions' as never)}
+                                >
+                                    <Text className="text-zinc-300 font-medium">Lịch sử giao dịch</Text>
                                 </TouchableOpacity>
                             )}
                         </View>

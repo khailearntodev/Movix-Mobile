@@ -23,6 +23,7 @@ import { clsx } from 'clsx';
 import { RootStackParamList } from '../../types/navigation';
 import { Message, WatchPartyMember, RoomData } from '@/types/watch-party';
 import { watchPartyService } from '@/services/watch-party.service';
+import { subscriptionService } from '@/services/subscription.service';
 import { useAuth } from '@/contexts/AuthContext';
 import { SOCKET_URL } from '@/constants/config';
 import { getAccessToken } from '@/utils/storage';
@@ -177,7 +178,7 @@ export default function WatchPartyRoomPage() {
 
     const player = useVideoPlayer(videoUrl, p => {
         p.loop = false;
-        p.play();
+        // p.play(); - Do not auto play to avoid out of sync for viewers
     });
 
     const [messages, setMessages] = useState<any[]>([]);
@@ -636,9 +637,24 @@ export default function WatchPartyRoomPage() {
         setMsgInput("");
     };
 
-    const handleUserAction = (action: 'kick' | 'ban' | 'transfer') => {
+    const handleUserAction = async (action: 'kick' | 'ban' | 'transfer') => {
         const targetUserId = userManageModal.userId;
         if (!targetUserId || !socketRef.current) return;
+
+        if (action === 'kick' || action === 'ban') {
+            const canKickMute = await subscriptionService.canKickMuteMembers();
+            if (!canKickMute) {
+                Alert.alert(
+                    "Yêu cầu nâng cấp",
+                    "Tính năng quản lý thành viên (Kick/Ban) chỉ dành cho gói đăng ký hỗ trợ.",
+                    [
+                        { text: "Nâng cấp ngay", onPress: () => navigation.navigate('Subscription' as never) },
+                        { text: "Đóng", style: "cancel" }
+                    ]
+                );
+                return;
+            }
+        }
 
         const targetUser = members.find(u => u.id === targetUserId);
 
@@ -920,7 +936,7 @@ export default function WatchPartyRoomPage() {
                             contentContainerStyle={{ padding: 12 }}
                             ListHeaderComponent={() => (
                                 <>
-                                    <View className="mb-4 bg-red-900/10 border border-white/5 rounded-xl p-3 flex-row items-center justify-between">
+                                    {/* <View className="mb-4 bg-red-900/10 border border-white/5 rounded-xl p-3 flex-row items-center justify-between">
                                         <View className="flex-row items-center gap-3">
                                             <View className={clsx("w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10", isMicOn && "border-green-500/50 bg-green-500/10")}>
                                                 {isMicOn ? <Mic size={20} color="#22c55e" /> : <MicOff size={20} color="#ef4444" />}
@@ -938,7 +954,7 @@ export default function WatchPartyRoomPage() {
                                                 {isMicOn ? "Tắt Mic" : "Bật Mic"}
                                             </Text>
                                         </TouchableOpacity>
-                                    </View>
+                                    </View> */}
 
                                     {isHost && joinRequests.length > 0 && (
                                         <View className="mb-6">
