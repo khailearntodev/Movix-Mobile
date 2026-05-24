@@ -21,6 +21,7 @@ import {
     addMovieToPlaylist,
     removeMovieFromPlaylist
 } from '../../services/interaction.service';
+import { subscriptionService } from '../../services/subscription.service';
 
 import * as Application from 'expo-application';
 import { Platform, Alert } from 'react-native';
@@ -265,6 +266,19 @@ export default function WatchMovieScreen() {
         path?.startsWith('http') ? path : path ? `https://image.tmdb.org/t/p/w500${path}` : "https://placehold.co/600x400/1a1a1a/FFF.png";
 
     const handleDownload = async () => {
+        const benefits = await subscriptionService.getUserSubscriptionBenefits();
+        if (!benefits || !benefits.downloads) {
+            Alert.alert(
+                "Yêu cầu nâng cấp",
+                "Tính năng tải phim ngoại tuyến chỉ dành cho thành viên có gói đăng ký hỗ trợ download.",
+                [
+                    { text: "Nâng cấp ngay", onPress: () => navigation.navigate('Subscription' as never) },
+                    { text: "Đóng", style: "cancel" }
+                ]
+            );
+            return;
+        }
+
         const episodeId = currentEpisode?.id || movie?.id;
         if (!episodeId) {
             Alert.alert('Lỗi', 'Không thể xác định tập phim để tải.');
