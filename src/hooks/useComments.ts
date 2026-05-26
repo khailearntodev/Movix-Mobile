@@ -5,7 +5,8 @@ import { CommentWithReplies, CommentData } from "../types/comment";
 
 export const useComments = (
   target: { movieId?: string; postId?: string }, 
-  showToast: (message: string, type: "success" | "warning" | "error") => void
+  showToast: (message: string, type: "success" | "warning" | "error") => void,
+  onCommentsCountChange?: (count: number) => void
 ) => {
   const [comments, setComments] = useState<CommentWithReplies[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
@@ -24,6 +25,9 @@ export const useComments = (
       setIsLoadingComments(true);
       const data = await getComments(target);
       setComments(data);
+      onCommentsCountChange?.(
+        data.reduce((total, comment) => total + 1 + (comment.replies?.length || 0), 0)
+      );
     } catch (error) {
       console.error("Failed to fetch comments:", error);
     } finally {
