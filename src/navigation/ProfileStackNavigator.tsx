@@ -11,6 +11,7 @@ import ChangePasswordScreen from '../app/account/ChangePasswordScreen';
 import SubscriptionScreen from '../app/account/SubscriptionScreen';
 import DownloadsScreen from '../app/account/DownloadsScreen';
 import DevicesScreen from '../app/account/DevicesScreen';
+import AchievementsScreen from '../app/account/AchievementsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -64,6 +65,10 @@ export default function ProfileStackNavigator() {
             <Stack.Screen
                 name="Devices"
                 component={DevicesScreen}
+            />
+            <Stack.Screen
+                name="Achievements"
+                component={AchievementsScreen}
             />
         </Stack.Navigator>
     );
