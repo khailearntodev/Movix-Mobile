@@ -1,24 +1,10 @@
 import api from './api.service';
+import { Achievement, UserAchievement } from "@/types/gamification";
 
 export interface GamificationRank {
-  key: string;
+  key: 'NEWBIE' | 'MEMBER' | 'EXPERT' | 'LEGEND' | string;
   name: string;
   min_xp: number;
-}
-
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  icon_url?: string;
-  condition_type: string;
-  condition_value: number;
-  xp_reward: number;
-  is_active: boolean;
-  is_unlocked?: boolean;
-  unlocked_at?: string;
-  current_progress?: number;
-  progress?: number;
 }
 
 export interface GamificationProfile {
@@ -26,17 +12,28 @@ export interface GamificationProfile {
   total_watch_time: number;
   current_rank: GamificationRank | null;
   next_rank: GamificationRank | null;
-  achievements: Achievement[];
+  achievements: UserAchievement[];
 }
 
-export const gamificationService = {
-  getProfile: async (): Promise<GamificationProfile> => {
-    const response = await api.get('/gamification/profile');
-    return response.data.data;
-  },
-
-  getAchievements: async (): Promise<Achievement[]> => {
-    const response = await api.get('/gamification/achievements');
-    return response.data.data;
+export const getAllAchievements = async (page = 1, limit = 100, isActive?: boolean): Promise<{ achievements: Achievement[], total: number, page: number, totalPages: number }> => {
+  const params: any = { page, limit };
+  if (isActive !== undefined) {
+    params.isActive = isActive;
   }
+  const response = await api.get('/admin/gamification/get-all-achievements', { params });
+  return {
+    achievements: response.data.data,
+    total: response.data.meta.total,
+    page: response.data.meta.page,
+    totalPages: response.data.meta.totalPages
+  };
+};
+export const getProfile = async (): Promise<GamificationProfile> => {
+  const response = await api.get('/gamification/profile');
+  return response.data.data;
+};
+
+export const getAchievements = async (): Promise<any[]> => {
+  const response = await api.get('/gamification/achievements');
+  return response.data.data;
 };

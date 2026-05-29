@@ -11,6 +11,10 @@ import { CommentList } from "../../components/movie/comments/CommentList";
 import { CommentInput } from "../../components/movie/comments/CommentInput";
 import { ToastMessage, ToastType } from "../../components/common/ToastMessage";
 import { useComments } from "../../hooks/useComments";
+import { useFollow } from "../../hooks/useFollow";
+import { useAuth } from "../../contexts/AuthContext";
+import { DeviceEventEmitter } from 'react-native';
+import { getBlogEngagement } from './blogEngagement';
 
 type BlogDetailRouteProp = RouteProp<RootStackParamList, 'BlogDetail'>;
 
@@ -21,6 +25,11 @@ export default function BlogDetailScreen() {
   const [loading, setLoading] = useState(true);
 
   const { id, slug } = route.params;
+
+  // Follow Hook
+  const { user } = useAuth();
+  const authorId = post?.user?.id;
+  const { isFollowing, isLoading: isFollowLoading, toggleFollow } = useFollow(authorId || "");
 
   // Toast State
   const [toastVisible, setToastVisible] = useState(false);
@@ -44,18 +53,58 @@ export default function BlogDetailScreen() {
     setIsSpoiler,
     replyingTo,
     setReplyingTo
-  } = useComments({ postId: id?.toString() || "" }, showToast);
+  } = useComments(
+    { postId: id?.toString() || "" }, 
+    showToast,
+    (commentsCount) => {
+      setPost((currentPost: any) => {
+        if (!currentPost) return currentPost;
+
+        return {
+          ...currentPost,
+          comment_count: commentsCount,
+          _count: {
+            ...currentPost._count,
+            comments: commentsCount
+          }
+        };
+      });
+
+      if (post?.id) {
+        DeviceEventEmitter.emit('blog_post_updated', {
+          postId: post.id,
+          updates: {
+             commentsCount
+          }
+        });
+      }
+    }
+  );
 
   useEffect(() => {
     fetchPostDetail();
-  }, [id, slug]);
+  }, [id, slug, user?.id]);
 
   const fetchPostDetail = async () => {
     try {
       setLoading(true);
       const response = await blogService.getBlogById(id);
       if (response && response.data) {
-        setPost(response.data);
+        const engagement = getBlogEngagement(response.data, user?.id);
+        setPost({
+          ...response.data,
+          is_liked: engagement.isLiked,
+          is_bookmarked: engagement.isBookmarked,
+          like_count: engagement.likeCount,
+          comment_count: engagement.commentCount,
+          bookmark_count: engagement.bookmarkCount,
+          _count: {
+            ...response.data._count,
+            likes: engagement.likeCount,
+            comments: engagement.commentCount,
+            bookmarks: engagement.bookmarkCount,
+          },
+        });
       }
     } catch (error) {
       console.error('Error fetching blog detail:', error);
@@ -66,22 +115,129 @@ export default function BlogDetailScreen() {
 
   const handleLike = async () => {
     if (!post) return;
+    
+    // Optimistic update
+    const previousPost = { ...post };
+    const engagement = getBlogEngagement(post, user?.id);
+    const currentLikes = engagement.likeCount;
+    const newLikesCount = engagement.isLiked 
+      ? Math.max(0, currentLikes - 1)
+      : currentLikes + 1;
+    const newIsLiked = !engagement.isLiked;
+
+    setPost({
+      ...post,
+      is_liked: newIsLiked,
+      like_count: newLikesCount,
+      _count: {
+        ...post._count,
+        likes: newLikesCount
+      }
+    });
+
+    DeviceEventEmitter.emit('blog_post_updated', {
+      postId: post.id,
+      updates: {
+         likesCount: newLikesCount,
+         isLiked: newIsLiked
+      }
+    });
+
     try {
-      // Optimistic upate logic here
-      await blogService.toggleLike(post.id);
-      fetchPostDetail();
+      const response = await blogService.toggleLike(post.id);
+      const data = response?.data;
+      if (data) {
+        setPost((currentPost: any) => ({
+          ...currentPost,
+          is_liked: typeof data.liked === 'boolean' ? data.liked : currentPost.is_liked,
+          like_count: typeof data.like_count === 'number' ? data.like_count : currentPost.like_count,
+          comment_count: typeof data.comment_count === 'number' ? data.comment_count : currentPost.comment_count,
+          bookmark_count: typeof data.bookmark_count === 'number' ? data.bookmark_count : currentPost.bookmark_count,
+          _count: {
+            ...currentPost._count,
+            likes: typeof data.like_count === 'number' ? data.like_count : currentPost._count?.likes,
+            comments: typeof data.comment_count === 'number' ? data.comment_count : currentPost._count?.comments,
+            bookmarks: typeof data.bookmark_count === 'number' ? data.bookmark_count : currentPost._count?.bookmarks,
+          },
+        }));
+        DeviceEventEmitter.emit('blog_post_updated', {
+          postId: post.id,
+          updates: {
+             likesCount: typeof data.like_count === 'number' ? data.like_count : newLikesCount,
+             isLiked: typeof data.liked === 'boolean' ? data.liked : newIsLiked
+          }
+        });
+      }
     } catch (error) {
       console.error('Error toggling like:', error);
+      // Revert if error
+      setPost(previousPost);
+      DeviceEventEmitter.emit('blog_post_updated', {
+        postId: post.id,
+        updates: {
+           likesCount: Number((previousPost.like_count ?? previousPost.likes_count ?? previousPost._count?.likes) || 0),
+           isLiked: previousPost.is_liked
+        }
+      });
+      showToast('Có lỗi xảy ra, vui lòng thử lại', 'error');
     }
   };
 
   const handleBookmark = async () => {
     if (!post) return;
+
+    // Optimistic update
+    const previousPost = { ...post };
+    const engagement = getBlogEngagement(post, user?.id);
+    const newIsBookmarked = !engagement.isBookmarked;
+    
+    setPost({
+      ...post,
+      is_bookmarked: newIsBookmarked
+    });
+
+    DeviceEventEmitter.emit('blog_post_updated', {
+      postId: post.id,
+      updates: {
+         isBookmarked: newIsBookmarked
+      }
+    });
+
     try {
-      await blogService.toggleBookmark(post.id);
-      fetchPostDetail();
+      const response = await blogService.toggleBookmark(post.id);
+      const data = response?.data;
+      if (data) {
+        setPost((currentPost: any) => ({
+          ...currentPost,
+          is_bookmarked: typeof data.bookmarked === 'boolean' ? data.bookmarked : currentPost.is_bookmarked,
+          like_count: typeof data.like_count === 'number' ? data.like_count : currentPost.like_count,
+          comment_count: typeof data.comment_count === 'number' ? data.comment_count : currentPost.comment_count,
+          bookmark_count: typeof data.bookmark_count === 'number' ? data.bookmark_count : currentPost.bookmark_count,
+          _count: {
+            ...currentPost._count,
+            likes: typeof data.like_count === 'number' ? data.like_count : currentPost._count?.likes,
+            comments: typeof data.comment_count === 'number' ? data.comment_count : currentPost._count?.comments,
+            bookmarks: typeof data.bookmark_count === 'number' ? data.bookmark_count : currentPost._count?.bookmarks,
+          },
+        }));
+        DeviceEventEmitter.emit('blog_post_updated', {
+          postId: post.id,
+          updates: {
+             isBookmarked: typeof data.bookmarked === 'boolean' ? data.bookmarked : newIsBookmarked
+          }
+        });
+      }
     } catch (error) {
       console.error('Error toggling bookmark:', error);
+      // Revert if error
+      setPost(previousPost);
+      DeviceEventEmitter.emit('blog_post_updated', {
+        postId: post.id,
+        updates: {
+           isBookmarked: previousPost.is_bookmarked
+        }
+      });
+      showToast('Có lỗi xảy ra, vui lòng thử lại', 'error');
     }
   };
 
@@ -164,9 +320,24 @@ export default function BlogDetailScreen() {
                   </View>
                 </View>
               </View>
-              <TouchableOpacity className="px-4 py-1.5 bg-red-600/10 border border-red-600 rounded-full">
-                <Text className="text-red-600 text-sm font-medium">Theo dõi</Text>
-              </TouchableOpacity>
+              
+              {(!authorId || user?.id === authorId) ? null : (
+                <TouchableOpacity 
+                  onPress={toggleFollow}
+                  disabled={isFollowLoading}
+                  className={`px-4 py-1.5 border rounded-full ${
+                    isFollowing 
+                      ? 'bg-transparent border-zinc-600' 
+                      : 'bg-red-600/10 border-red-600'
+                  }`}
+                >
+                  <Text className={`text-sm font-medium ${
+                    isFollowing ? 'text-zinc-300' : 'text-red-600'
+                  }`}>
+                    {isFollowing ? 'Ngừng theo dõi' : 'Theo dõi'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* Movie Tags */}
@@ -199,13 +370,13 @@ export default function BlogDetailScreen() {
                 >
                   <ThumbsUp color={post.is_liked ? "#dc2626" : "#a1a1aa"} size={22} />
                   <Text className={`ml-2 text-base font-medium ${post.is_liked ? "text-red-600" : "text-zinc-400"}`}>
-                    {post._count?.likes || 0}
+                    {Number((post.like_count ?? post.likes_count ?? post._count?.likes) || 0)}
                   </Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity className="flex-row items-center py-2 mr-8">
                   <MessageSquare color="#a1a1aa" size={22} />
-                  <Text className="text-zinc-400 ml-2 text-base font-medium">{post._count?.comments || 0}</Text>
+                  <Text className="text-zinc-400 ml-2 text-base font-medium">{Number((post.comment_count ?? post.comments_count ?? post._count?.comments) || 0)}</Text>
                 </TouchableOpacity>
               </View>
 

@@ -8,6 +8,9 @@ import { vi } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
 import * as Haptics from 'expo-haptics';
 import { usePullToRefreshHaptics } from '../../hooks/usePullToRefreshHaptics';
+import { PostItem } from '../../components/blog/PostItem';
+import { DeviceEventEmitter } from 'react-native';
+import { getBlogEngagement } from './blogEngagement';
 
 interface Post {
   id: string;
@@ -78,12 +81,12 @@ export default function BlogScreen() {
           viewCount: item.view_count || 0,
           movie: item.movie || null,
           stats: {
-            likes: item._count?.likes || 0,
-            comments: item._count?.comments || 0,
-            shares: item._count?.bookmarks || 0,
+            likes: getBlogEngagement(item, user?.id).likeCount,
+            comments: getBlogEngagement(item, user?.id).commentCount,
+            shares: getBlogEngagement(item, user?.id).bookmarkCount,
           },
-          likedByCurrentUser: item.is_liked || false,
-          bookmarkedByCurrentUser: item.is_bookmarked || false,
+          likedByCurrentUser: getBlogEngagement(item, user?.id).isLiked,
+          bookmarkedByCurrentUser: getBlogEngagement(item, user?.id).isBookmarked,
         }));
 
         if (pageNumber === 1) {
@@ -110,6 +113,36 @@ export default function BlogScreen() {
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, activeFilter]);
 
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('blog_post_updated', ({ postId, updates }) => {
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          if (post.id === postId) {
+            const newPost = { ...post, stats: { ...post.stats } };
+            if (updates.commentsCount !== undefined) {
+              newPost.stats.comments = updates.commentsCount;
+            }
+            if (updates.likesCount !== undefined) {
+               newPost.stats.likes = updates.likesCount;
+            }
+            if (updates.isLiked !== undefined) {
+               newPost.likedByCurrentUser = updates.isLiked;
+            }
+            if (updates.isBookmarked !== undefined) {
+               newPost.bookmarkedByCurrentUser = updates.isBookmarked;
+            }
+            return newPost;
+          }
+          return post;
+        })
+      );
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   const { handleScroll } = usePullToRefreshHaptics(80);
 
   const onRefresh = () => {
@@ -127,91 +160,125 @@ export default function BlogScreen() {
     }
   };
 
+  const handleLikePost = async (postId: string, currentLiked: boolean) => {
+    // Optimistic update
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === postId
+          ? {
+              ...post,
+              likedByCurrentUser: !currentLiked,
+              stats: {
+                ...post.stats,
+                likes: currentLiked ? Math.max(0, Number(post.stats.likes || 0) - 1) : Number(post.stats.likes || 0) + 1,
+              },
+            }
+          : post
+      )
+    );
+
+    try {
+      const response = await blogService.toggleLike(postId);
+      const data = response?.data;
+      if (data) {
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === postId
+              ? {
+                  ...post,
+                  likedByCurrentUser: typeof data.liked === 'boolean' ? data.liked : post.likedByCurrentUser,
+                  stats: {
+                    ...post.stats,
+                    likes: typeof data.like_count === 'number' ? data.like_count : post.stats.likes,
+                    comments: typeof data.comment_count === 'number' ? data.comment_count : post.stats.comments,
+                    shares: typeof data.bookmark_count === 'number' ? data.bookmark_count : post.stats.shares,
+                  },
+                }
+              : post
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      // Revert on error
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? {
+                ...post,
+                likedByCurrentUser: currentLiked,
+                stats: {
+                  ...post.stats,
+                  likes: currentLiked ? Number(post.stats.likes || 0) + 1 : Math.max(0, Number(post.stats.likes || 0) - 1),
+                },
+              }
+            : post
+        )
+      );
+    }
+  };
+
+  const handleBookmarkPost = async (postId: string, currentBookmarked: boolean) => {
+    // Optimistic update
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === postId
+          ? {
+              ...post,
+              bookmarkedByCurrentUser: !currentBookmarked,
+            }
+          : post
+      )
+    );
+
+    try {
+      const response = await blogService.toggleBookmark(postId);
+      const data = response?.data;
+      if (data) {
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post.id === postId
+              ? {
+                  ...post,
+                  bookmarkedByCurrentUser: typeof data.bookmarked === 'boolean' ? data.bookmarked : post.bookmarkedByCurrentUser,
+                  stats: {
+                    ...post.stats,
+                    likes: typeof data.like_count === 'number' ? data.like_count : post.stats.likes,
+                    comments: typeof data.comment_count === 'number' ? data.comment_count : post.stats.comments,
+                    shares: typeof data.bookmark_count === 'number' ? data.bookmark_count : post.stats.shares,
+                  },
+                }
+              : post
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      // Revert on error
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? {
+                ...post,
+                bookmarkedByCurrentUser: currentBookmarked,
+              }
+            : post
+        )
+      );
+    }
+  };
+
   const handlePostPress = (post: Post) => {
     navigation.navigate('BlogDetail', { slug: post.slug, id: post.id });
   };
 
   const renderPost = ({ item }: { item: Post }) => (
-    <TouchableOpacity 
-      activeOpacity={0.8}
+    <PostItem 
+      item={item}
       onPress={() => handlePostPress(item)}
-      className="bg-[#18181D] mb-2.5 p-4 border-y border-[#2A2A32]"
-    >
-      <View className="flex-row items-center justify-between mb-2">
-        <View className="flex-row items-center flex-1">
-          <Image 
-            source={{ uri: item.author.avatarUrl }} 
-            className="w-[44px] h-[44px] rounded-full bg-zinc-800"
-          />
-          <View className="ml-3 flex-1">
-            <Text className="text-white text-[16.5px] font-bold flex-shrink-1" numberOfLines={1}>
-              {item.author.username}
-            </Text>
-            <Text className="text-[#9A9AA3] text-[13px] mt-0.5">{item.timeAgo}</Text>
-          </View>
-        </View>
-        <TouchableOpacity className="p-2">
-          <MoreHorizontal color="#A4A4AD" size={22} />
-        </TouchableOpacity>
-      </View>
-
-      {item.title ? (
-        <Text className="text-white text-[20px] font-bold leading-7 mt-3.5 mb-2.5" numberOfLines={2}>
-          {item.title}
-        </Text>
-      ) : null}
-
-      <Text className="text-[#D0D0D6] text-[15.5px] leading-6 mb-3" numberOfLines={3}>
-        {item.content}
-      </Text>
-
-      {item.imageUrl && (
-        <Image 
-          source={{ uri: item.imageUrl }} 
-          className="w-full aspect-video rounded-xl mb-3 bg-[#111115]"
-          resizeMode="cover"
-        />
-      )}
-
-      {item.movie && (
-        <View className="flex-row items-center bg-[#1F1F26] rounded-[14px] p-2.5 mb-3">
-          {item.movie.poster_url && (
-            <Image 
-              source={{ uri: item.movie.poster_url }} 
-              className="w-10 h-14 rounded-lg"
-              resizeMode="cover"
-            />
-          )}
-          <View className="ml-3 flex-1">
-            <Text className="text-[#9A9AA3] text-[12.5px] mb-0.5">Đang nhận xét về:</Text>
-            <Text className="text-white text-[15px] font-semibold" numberOfLines={1}>{item.title}</Text>
-          </View>
-        </View>
-      )}
-
-      <View className="flex-row items-center justify-between pt-2 mt-1">
-        <View className="flex-row items-center flex-1">
-          <TouchableOpacity className="flex-row items-center py-2 mr-6">
-            <ThumbsUp color={item.likedByCurrentUser ? "#EF2B2D" : "#A4A4AD"} size={22} />
-            <Text className={`ml-2 text-[14.5px] font-medium ${item.likedByCurrentUser ? "text-[#EF2B2D]" : "text-[#A4A4AD]"}`}>
-              {item.stats.likes}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity className="flex-row items-center py-2 mr-6">
-            <MessageSquare color="#A4A4AD" size={22} />
-            <Text className="text-[#A4A4AD] ml-2 text-[14.5px] font-medium">{item.stats.comments}</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View className="flex-row items-center">
-          <Text className="text-[#A4A4AD] text-[13.5px] mr-4">{item.viewCount} lượt xem</Text>
-          <TouchableOpacity className="py-2 pl-2">
-            <Bookmark color={item.bookmarkedByCurrentUser ? "#EF2B2D" : "#A4A4AD"} size={22} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
+      onLike={() => handleLikePost(item.id, !!item.likedByCurrentUser)}
+      onBookmark={() => handleBookmarkPost(item.id, !!item.bookmarkedByCurrentUser)}
+    />
   );
 
   const renderHeader = () => (
