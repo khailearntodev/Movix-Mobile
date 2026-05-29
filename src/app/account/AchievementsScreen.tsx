@@ -26,9 +26,9 @@ export default function AchievementsScreen() {
                 getProfile(),
                 getAchievements()
             ]);
-            
+
             setProfile(profileData);
-            
+
             // Format achievements
             if (allAchievements) {
                 const unlockedIds = new Set((profileData.achievements || []).map((a: any) => a.id));
@@ -61,9 +61,9 @@ export default function AchievementsScreen() {
         const percent = max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
         return (
             <View className="flex-1 h-2 bg-zinc-800 rounded-full mt-2 overflow-hidden">
-                <View 
+                <View
                     style={{ width: `${percent}%` }}
-                    className={`h-full ${colorClass}`} 
+                    className={`h-full ${colorClass}`}
                 />
             </View>
         );
@@ -99,7 +99,7 @@ export default function AchievementsScreen() {
                 <Text className="text-white text-xl font-bold flex-1">Thành tựu</Text>
             </View>
 
-            <ScrollView 
+            <ScrollView
                 className="flex-1"
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ef4444" />}
             >
@@ -113,12 +113,12 @@ export default function AchievementsScreen() {
                                 <View className="absolute -top-4 -right-4 opacity-5 rotate-12">
                                     <Trophy size={140} color="#eab308" />
                                 </View>
-                                
+
                                 <View className="flex-row items-start justify-between mb-4 z-10">
                                     <View className="flex-1">
                                         <Text className="text-white font-semibold text-base">Tiến độ tổng quan</Text>
                                         <Text className="text-zinc-400 text-xs mt-1">Bạn đã mở khóa {unlockedCount}/{totalAchievements} danh hiệu</Text>
-                                        
+
                                         <View className="flex-row items-center mt-3 flex-wrap">
                                             <Text className="text-zinc-300 text-xs font-medium mr-1">Hạng hiện tại:</Text>
                                             <Text className="text-zinc-200 text-xs mr-2">{profile.current_rank?.name || "—"}</Text>
@@ -129,9 +129,9 @@ export default function AchievementsScreen() {
                                     </View>
                                     <Text className="text-yellow-500 font-bold text-3xl">{rankProgressPercent}%</Text>
                                 </View>
-                                
+
                                 <View className="h-3 w-full bg-zinc-800 rounded-full overflow-hidden z-10">
-                                    <View 
+                                    <View
                                         className="h-full bg-yellow-500"
                                         style={{ width: `${rankProgressPercent}%` }}
                                     />
@@ -139,12 +139,12 @@ export default function AchievementsScreen() {
                             </View>
 
                             {/* Unlocked Achievements */}
-                            <Text className="text-white text-lg font-bold mb-4 flex-row items-center"><Award size={20} color="#eab308" style={{marginRight: 8}}/> Bộ Sưu Tập Danh Hiệu</Text>
-                            
+                            <Text className="text-white text-lg font-bold mb-4 flex-row items-center"><Award size={20} color="#eab308" style={{ marginRight: 8 }} /> Bộ Sưu Tập Danh Hiệu</Text>
+
                             {unlockedAchievements.length > 0 ? (
                                 <View className="flex-row flex-wrap justify-between mb-8">
                                     {unlockedAchievements.map((achievement: any) => (
-                                        <View 
+                                        <View
                                             key={achievement.id}
                                             className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4"
                                             style={{ width: '48%' }}
@@ -177,8 +177,8 @@ export default function AchievementsScreen() {
                             )}
 
                             {/* Locked Achievements */}
-                            <Text className="text-white text-lg font-bold mb-4 flex-row items-center"><Lock size={20} color="#71717a" style={{marginRight: 8}}/> Chưa Mở Khóa</Text>
-                            
+                            <Text className="text-white text-lg font-bold mb-4 flex-row items-center"><Lock size={20} color="#71717a" style={{ marginRight: 8 }} /> Chưa Mở Khóa</Text>
+
                             <View className="mb-6">
                                 {lockedAchievements.map((achievement: any) => {
                                     let progressValue = achievement.current_progress ?? achievement.progress ?? 0;
@@ -187,7 +187,7 @@ export default function AchievementsScreen() {
                                         else if (achievement.condition_type === "TOTAL_WATCH_TIME") progressValue = profile.total_watch_time;
                                     }
                                     const percent = achievement.condition_value > 0 ? Math.min(100, Math.round((progressValue / achievement.condition_value) * 100)) : 0;
-                                    
+
                                     return (
                                         <View key={achievement.id} className="flex-row items-center p-4 bg-zinc-900 border border-zinc-800 rounded-xl mb-3 opacity-80">
                                             <View className="w-12 h-12 bg-zinc-900 rounded-full items-center justify-center overflow-hidden grayscale mr-4 opacity-50">

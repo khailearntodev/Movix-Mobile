@@ -15,7 +15,7 @@ export interface GamificationProfile {
   achievements: UserAchievement[];
 }
 
-export const getAllAchievements = async (page = 1, limit = 100, isActive?: boolean): Promise<{achievements: Achievement[], total: number, page: number, totalPages: number}> => {
+export const getAllAchievements = async (page = 1, limit = 100, isActive?: boolean): Promise<{ achievements: Achievement[], total: number, page: number, totalPages: number }> => {
   const params: any = { page, limit };
   if (isActive !== undefined) {
     params.isActive = isActive;
