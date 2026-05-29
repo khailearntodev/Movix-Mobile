@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu, Smartphone } from 'lucide-react-native';
+import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu, Smartphone, Trophy, Bookmark } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMyProfile, UserProfile } from '@/services/user.service';
 import { subscriptionService } from '@/services/subscription.service';
 import { UserSubscription } from '@/types/subscription';
+import { gamificationService, GamificationProfile } from '@/services/gamification.service';
 import { AIChatButton } from '@/components/common/AIChatButton';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -13,6 +14,7 @@ const AccountScreen = () => {
     const { signOut } = useAuth();
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
+    const [gamificationProfile, setGamificationProfile] = useState<GamificationProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useFocusEffect(
@@ -26,12 +28,14 @@ const AccountScreen = () => {
             if (!userProfile || !userSubscription) {
                 setIsLoading(true);
             }
-            const [profileData, subData] = await Promise.all([
+            const [profileData, subData, gamificationData] = await Promise.all([
                 getMyProfile(),
-                subscriptionService.getUserSubscription().catch(() => null)
+                subscriptionService.getUserSubscription().catch(() => null),
+                gamificationService.getProfile().catch(() => null)
             ]);
             setUserProfile(profileData);
             setUserSubscription(subData);
+            setGamificationProfile(gamificationData);
         } catch (error) {
             console.error('Error loading profile:', error);
         } finally {
@@ -106,11 +110,21 @@ const AccountScreen = () => {
                         <Text className="text-white text-xl font-bold mb-1">
                             {userProfile.display_name || userProfile.username || 'Người dùng'}
                         </Text>
-                        <View className={`flex-row items-center gap-1 px-3 py-1 rounded-full ${isPremium ? 'bg-yellow-500/20' : 'bg-zinc-800'}`}>
-                            {isPremium && <Crown size={14} color="#eab308" />}
-                            <Text className={`${isPremium ? 'text-yellow-500 font-bold' : 'text-zinc-300 font-medium'} text-xs uppercase`}>
-                                {isPremium ? 'VIP MEMBER' : 'Thành viên'}
-                            </Text>
+                        <View className="flex-row items-center gap-2">
+                            <View className={`flex-row items-center gap-1 px-3 py-1 rounded-full ${isPremium ? 'bg-yellow-500/20' : 'bg-zinc-800'}`}>
+                                {isPremium && <Crown size={14} color="#eab308" />}
+                                <Text className={`${isPremium ? 'text-yellow-500 font-bold' : 'text-zinc-300 font-medium'} text-xs uppercase`}>
+                                    {isPremium ? 'VIP MEMBER' : 'Thành viên'}
+                                </Text>
+                            </View>
+                            {gamificationProfile?.current_rank && (
+                                <View className="flex-row items-center gap-1 px-3 py-1 rounded-full bg-blue-500/20">
+                                    <Trophy size={14} color="#3b82f6" />
+                                    <Text className="text-blue-500 font-bold text-xs uppercase">
+                                        {gamificationProfile.current_rank.name}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                     </TouchableOpacity>
                 ) : (
@@ -151,6 +165,16 @@ const AccountScreen = () => {
                     {renderMenuItem(<List size={22} color="white" />, "Danh sách của tôi", () => navigation.navigate('Playlist'))}
                     {renderMenuItem(<Heart size={22} color="white" />, "Phim yêu thích", () => navigation.navigate('Favorites'))}
                     {renderMenuItem(<History size={22} color="white" />, "Lịch sử xem", () => navigation.navigate('History'))}
+                </View>
+
+                {/* Community Section */}
+                <View className="mb-8">
+                    <View className="flex-row items-center gap-2 mb-2">
+                        <View className="w-1 h-4 bg-yellow-500 rounded-full" />
+                        <Text className="text-lg font-bold text-zinc-200">Cộng đồng</Text>
+                    </View>
+                    {renderMenuItem(<Trophy size={22} color="#eab308" />, "Danh hiệu & Thành tựu", () => navigation.navigate('Achievements'))}
+                    {renderMenuItem(<Bookmark size={22} color="white" />, "Bài viết đã lưu", () => navigation.navigate('Bookmarks'))}
                 </View>
 
                 {/* Settings Section */}
