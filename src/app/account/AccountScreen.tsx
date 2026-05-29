@@ -1,11 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu, Smartphone, Trophy, Bookmark, Trophy } from 'lucide-react-native';
+import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu, Smartphone, Trophy, Bookmark } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMyProfile, UserProfile } from '@/services/user.service';
 import { subscriptionService } from '@/services/subscription.service';
 import { UserSubscription } from '@/types/subscription';
-import { gamificationService, GamificationProfile } from '@/services/gamification.service';
+import { getProfile, GamificationProfile } from '@/services/gamification.service';
 import { AIChatButton } from '@/components/common/AIChatButton';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,7 +31,7 @@ const AccountScreen = () => {
             const [profileData, subData, gamificationData] = await Promise.all([
                 getMyProfile(),
                 subscriptionService.getUserSubscription().catch(() => null),
-                gamificationService.getProfile().catch(() => null)
+                getProfile().catch(() => null)
             ]);
             setUserProfile(profileData);
             setUserSubscription(subData);
