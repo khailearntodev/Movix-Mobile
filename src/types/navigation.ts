@@ -3,6 +3,7 @@ import { Movie } from "./movie";
 export type RootStackParamList = {
   Login: undefined;
   Welcome: undefined;
+  Onboarding: undefined;
   Register: undefined;
   ForgotPassword: undefined;
   ResetPassword: undefined;

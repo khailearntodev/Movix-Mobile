@@ -30,7 +30,13 @@ export default function LoginPage() {
            Alert.alert("Thành công", "Đăng nhập thành công!", [
              {
                text: "OK",
-               onPress: () => navigation.replace("Main"),
+               onPress: () => {
+                 if (user?.preferences?.onboarded_at) {
+                   navigation.replace("Main");
+                 } else {
+                   navigation.replace("Onboarding");
+                 }
+               },
              },
            ]);
          } catch (error: any) {

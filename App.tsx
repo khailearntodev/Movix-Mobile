@@ -12,7 +12,7 @@ import ForgotPasswordPage from "./src/app/(auth)/forgot-password/ForgotPasswordS
 import ResetPasswordPage from "./src/app/(auth)/reset-password/ResetPasswordScreen";
 import RemoteScreen from "./src/app/remote/RemoteScreen";
 import WelcomePage from "./src/app/welcome/WelcomeScreen";
-
+import OnboardingScreen from "./src/app/onboarding/OnboardingScreen";
 import FilterPage from "./src/app/search/FilterScreen";
 import SearchPage from "./src/app/search/SearchScreen";
 import WatchPartyScreen from "./src/app/watch-party/WatchPartyScreen";
@@ -53,6 +53,7 @@ export default function App() {
                 screenOptions={{ headerShown: false }}
             >
                 <Stack.Screen name="Welcome" component={WelcomePage} />
+                <Stack.Screen name="Onboarding" component={OnboardingScreen} />
                 
                 {/* Auth Group */}
                 <Stack.Screen name="Login" component={LoginPage} />
