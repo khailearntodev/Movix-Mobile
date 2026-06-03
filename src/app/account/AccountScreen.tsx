@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
-import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu, Smartphone, Trophy, Bookmark } from 'lucide-react-native';
+import { Heart, List, History, Bell, User, LogOut, ChevronRight, Crown, Settings, Download, Search, Menu, Smartphone, Trophy, Bookmark, Users } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getMyProfile, UserProfile } from '@/services/user.service';
 import { subscriptionService } from '@/services/subscription.service';
@@ -162,7 +162,6 @@ const AccountScreen = () => {
                         <View className="w-1 h-4 bg-red-600 rounded-full" />
                         <Text className="text-lg font-bold text-zinc-200">Kho phim của tôi</Text>
                     </View>
-                    {renderMenuItem(<Trophy size={22} color="white" />, "Thành tựu", () => navigation.navigate('Achievements'))}
                     {renderMenuItem(<List size={22} color="white" />, "Danh sách của tôi", () => navigation.navigate('Playlist'))}
                     {renderMenuItem(<Heart size={22} color="white" />, "Phim yêu thích", () => navigation.navigate('Favorites'))}
                     {renderMenuItem(<History size={22} color="white" />, "Lịch sử xem", () => navigation.navigate('History'))}
@@ -174,6 +173,7 @@ const AccountScreen = () => {
                         <View className="w-1 h-4 bg-yellow-500 rounded-full" />
                         <Text className="text-lg font-bold text-zinc-200">Cộng đồng</Text>
                     </View>
+                    {renderMenuItem(<Users size={22} color="white" />, "Bạn bè & Người theo dõi", () => navigation.navigate('Network'))}
                     {renderMenuItem(<Trophy size={22} color="#eab308" />, "Danh hiệu & Thành tựu", () => navigation.navigate('Achievements'))}
                     {renderMenuItem(<Bookmark size={22} color="white" />, "Bài viết đã lưu", () => navigation.navigate('Bookmarks'))}
                 </View>
