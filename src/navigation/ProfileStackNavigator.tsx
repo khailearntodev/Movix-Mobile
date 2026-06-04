@@ -14,6 +14,7 @@ import DownloadsScreen from '../app/account/DownloadsScreen';
 import DevicesScreen from '../app/account/DevicesScreen';
 import BookmarksScreen from '../app/account/BookmarksScreen';
 import AchievementsScreen from '../app/account/AchievementsScreen';
+import NetworkScreen from '../app/account/NetworkScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -79,6 +80,10 @@ export default function ProfileStackNavigator() {
             <Stack.Screen
                 name="Achievements"
                 component={AchievementsScreen}
+            />
+            <Stack.Screen
+                name="Network"
+                component={NetworkScreen}
             />
         </Stack.Navigator>
     );

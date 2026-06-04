@@ -13,6 +13,7 @@ import { ToastMessage, ToastType } from "../../components/common/ToastMessage";
 import { PlaylistModal, Playlist } from "../../components/movie/PlaylistModal";
 import { CommentList } from "../../components/movie/comments/CommentList";
 import { CommentInput } from "../../components/movie/comments/CommentInput";
+import { RatingWidget } from "../../components/movie/RatingWidget";
 import { useComments } from "../../hooks/useComments";
 import { getMovie } from "../../services/movie.service";
 import {
@@ -326,12 +327,17 @@ export default function MovieDetailScreen() {
               </ScrollView>
             </View>
 
-            {/* Comments Section */}
-            <CommentList
-              comments={comments}
-              isLoading={isLoadingComments}
-              onReply={setReplyingTo}
-            />
+          {/* Rating Section */}
+          {movieData?.id && (
+            <RatingWidget movieId={movieData.id.toString()} />
+          )}
+
+          {/* Comments Section */}
+          <CommentList 
+            comments={comments}
+            isLoading={isLoadingComments}
+            onReply={setReplyingTo}
+          />
 
           </View>
         </ScrollView>
