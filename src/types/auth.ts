@@ -9,6 +9,7 @@ export interface User {
   status?: string;
   xp?: number;
   total_watch_time?: number;
+  preferences?: { onboarded_at?: string; [key: string]: any };
 }
 
 export interface AuthResponse {

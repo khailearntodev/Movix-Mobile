@@ -7,11 +7,24 @@ import { Eye, EyeOff } from "lucide-react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "../../types/navigation";
 
+import { useAuth } from "../../contexts/AuthContext";
+
 export default function WelcomePage() {
     //variables
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const [isLoading, setIsLoading] = useState(false);
+    const { isAuthenticated, user, isLoading } = useAuth();
+    
     //useEffects
+    React.useEffect(() => {
+        if (!isLoading && isAuthenticated && user) {
+            if (user.preferences?.onboarded_at) {
+                navigation.replace("Main");
+            } else {
+                navigation.replace("Onboarding");
+            }
+        }
+    }, [isLoading, isAuthenticated, user, navigation]);
+
     //handles
     //UIs
     return (

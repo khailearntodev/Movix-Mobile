@@ -7,7 +7,7 @@ import { setLogoutCallback } from '@/services/api.service';
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    signIn: (payload: LoginPayload) => Promise<void>;
+    signIn: (payload: LoginPayload) => Promise<User>;
     signUp: (payload: RegisterPayload) => Promise<User>;
     signOut: () => Promise<void>;
     isAuthenticated: boolean;
@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             const userData = await authService.getMe();
             setUser(userData);
+            return userData;
         } catch (error) {
             throw error;
         } finally {
