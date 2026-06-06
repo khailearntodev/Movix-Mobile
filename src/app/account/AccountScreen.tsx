@@ -42,15 +42,15 @@ const AccountScreen = () => {
             setIsLoading(false);
         }
     };
-    
+
     const handleLogout = () => {
         Alert.alert(
             "Đăng xuất",
             "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?",
             [
                 { text: "Hủy", style: "cancel" },
-                { 
-                    text: "Đăng xuất", 
+                {
+                    text: "Đăng xuất",
                     style: "destructive",
                     onPress: async () => {
                         await signOut();
@@ -64,9 +64,9 @@ const AccountScreen = () => {
         );
     };
 
-    const isPremium = userSubscription && 
-                      userSubscription.status === 'ACTIVE' && 
-                      new Date(userSubscription.end_date) > new Date();
+    const isPremium = userSubscription &&
+        userSubscription.status === 'ACTIVE' &&
+        new Date(userSubscription.end_date) > new Date();
 
     const renderMenuItem = (icon: any, label: string, onPress: () => void, color = "#a1a1aa", showBadge = false) => (
         <TouchableOpacity
@@ -149,7 +149,7 @@ const AccountScreen = () => {
                         </View>
                         <Text className="text-zinc-400 text-xs font-medium">Thông báo</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         className="items-center gap-2"
                         onPress={() => navigation.navigate('Downloads')}
                     >
@@ -189,7 +189,6 @@ const AccountScreen = () => {
                         <Text className="text-lg font-bold text-zinc-200">Cài đặt & Hỗ trợ</Text>
                     </View>
                     {renderMenuItem(<Crown size={22} color="#eab308" />, "Gói dịch vụ", () => navigation.navigate('Subscription'))}
-                    {renderMenuItem(<Settings size={22} color="white" />, "Cài đặt ứng dụng", () => { })}
                     {renderMenuItem(<User size={22} color="white" />, "Tài khoản", () => navigation.navigate('EditProfile'))}
                     {renderMenuItem(<Smartphone size={22} color="white" />, "Quản lý thiết bị", () => navigation.navigate('Devices'))}
                     {renderMenuItem(<LogOut size={22} color="#ef4444" />, "Đăng xuất", handleLogout, "#ef4444")}
