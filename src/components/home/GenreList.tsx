@@ -15,8 +15,10 @@ const GENRES = [
     { id: 27, name: "Kinh dị" },
 ];
 
+export type HomeGenre = (typeof GENRES)[number];
+
 interface GenreListProps {
-    onGenrePress?: (genreId: number) => void;
+    onGenrePress?: (genre: HomeGenre) => void;
 }
 
 const GenreList = ({ onGenrePress }: GenreListProps) => {
@@ -32,7 +34,7 @@ const GenreList = ({ onGenrePress }: GenreListProps) => {
                     <TouchableOpacity
                         key={genre.id}
                         className="bg-zinc-800 px-4 py-2 rounded-full border border-zinc-700"
-                        onPress={() => onGenrePress && onGenrePress(genre.id)}
+                        onPress={() => onGenrePress && onGenrePress(genre)}
                     >
                         <Text className="text-zinc-300 font-medium whitespace-nowrap">{genre.name}</Text>
                     </TouchableOpacity>

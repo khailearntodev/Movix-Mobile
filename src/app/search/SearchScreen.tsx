@@ -149,15 +149,7 @@ function SearchScreen({ navigation, route }: any) {
             handleSearch('filter_event', true, newFilters);
         });
 
-        if (route.params?.appliedFilters) {
-            const af = route.params.appliedFilters;
-            setFilters(af);
-            handleSearch('filter_param', true, af);
-        }
-
-        if (!route.params?.appliedFilters) {
-            loadInitialMovies();
-        }
+        loadInitialMovies();
 
         return () => {
             subscription.remove();
@@ -168,6 +160,15 @@ function SearchScreen({ navigation, route }: any) {
             }
         };
     }, []);
+
+    useEffect(() => {
+        const appliedFilters = route.params?.appliedFilters;
+        if (!appliedFilters) return;
+
+        setSearchMode('normal');
+        setFilters(appliedFilters);
+        handleSearch('filter_param', true, appliedFilters);
+    }, [route.params?.appliedFilters]);
 
     useEffect(() => {
         Animated.timing(fadeAnim, {

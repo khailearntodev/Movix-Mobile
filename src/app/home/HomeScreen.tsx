@@ -13,6 +13,7 @@ import HeroBanner from "../../components/home/HeroBanner";
 import GenreList from "../../components/home/GenreList";
 import { Search, MessageCircle } from "lucide-react-native";
 import { AIChatButton } from "../../components/common/AIChatButton";
+import { FilterValues } from "../../components/search/FilterForm";
 
 export default function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -70,10 +71,22 @@ export default function HomeScreen() {
     }
   };
 
+  const handleGenrePress = (genreName: string) => {
+    const appliedFilters: FilterValues = {
+      with_genres: [genreName],
+      region: "Tất cả",
+      year: "Tất cả",
+      type: "all",
+      rating: "Tất cả",
+    };
+
+    navigation.navigate("Search", { appliedFilters });
+  };
+
   return (
     <View className="flex-1 bg-black">
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
-      <SafeAreaView className="flex-1">
+      <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
 
         {/* Header */}
         <View className="px-4 py-2 flex-row justify-between items-center bg-black/80 z-50">
@@ -95,7 +108,7 @@ export default function HomeScreen() {
 
         <ScrollView 
           className="flex-1" 
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 24 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="red" />}
         >
 
@@ -103,7 +116,7 @@ export default function HomeScreen() {
           <HeroBanner banners={banners} onPress={handleBannerPress} />
 
           {/* Genre List */}
-          <GenreList onGenrePress={(id) => console.log('Genre pressed:', id)} />
+          <GenreList onGenrePress={(genre) => handleGenrePress(genre.name)} />
 
 
    {loading ? (
