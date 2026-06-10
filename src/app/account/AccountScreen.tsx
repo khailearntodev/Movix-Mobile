@@ -54,6 +54,10 @@ const AccountScreen = () => {
                     style: "destructive",
                     onPress: async () => {
                         await signOut();
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Welcome' }],
+                        });
                     }
                 }
             ]
