@@ -9,6 +9,9 @@ import { downloadService } from '../../services/download.service';
 import { OfflineDownload } from '../../types/download';
 import * as Application from 'expo-application';
 import * as FileSystem from 'expo-file-system/legacy';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const OFFLINE_POSTER_STORAGE_KEY = 'offline_download_posters';
 
 export default function DownloadsScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -27,7 +30,14 @@ export default function DownloadsScreen() {
 
             const response = await downloadService.getDownloads(deviceId);
             if (response.success) {
-                setDownloads(response.data || []);
+                const rawPosters = await AsyncStorage.getItem(OFFLINE_POSTER_STORAGE_KEY);
+                const posterMap: Record<string, string> = rawPosters ? JSON.parse(rawPosters) : {};
+                const downloadsWithPosters = (response.data || []).map((item) => ({
+                    ...item,
+                    posterPath: item.posterPath || posterMap[item.id],
+                }));
+
+                setDownloads(downloadsWithPosters);
             }
         } catch (error) {
             console.error('Failed to fetch downloads:', error);
@@ -41,7 +51,29 @@ export default function DownloadsScreen() {
         fetchDownloads();
     }, []);
 
-    const handleDelete = async (id: string, titleName: string) => {
+    const removeOfflinePoster = async (item: OfflineDownload) => {
+        try {
+            const rawPosters = await AsyncStorage.getItem(OFFLINE_POSTER_STORAGE_KEY);
+            const posterMap: Record<string, string> = rawPosters ? JSON.parse(rawPosters) : {};
+            const posterPath = item.posterPath || posterMap[item.id];
+
+            if (posterPath) {
+                const posterInfo = await FileSystem.getInfoAsync(posterPath);
+                if (posterInfo.exists) {
+                    await FileSystem.deleteAsync(posterPath, { idempotent: true });
+                }
+            }
+
+            if (posterMap[item.id]) {
+                delete posterMap[item.id];
+                await AsyncStorage.setItem(OFFLINE_POSTER_STORAGE_KEY, JSON.stringify(posterMap));
+            }
+        } catch (error) {
+            console.warn('Khong the xoa poster offline:', error);
+        }
+    };
+
+    const handleDelete = async (item: OfflineDownload, titleName: string) => {
         Alert.alert(
             'Xác nhận xoá',
             `Bạn có chắc chắn muốn xoá bộ phim "${titleName}" đã tải xuống?\nHành động này cũng sẽ cài lại số lượt trên gói của bạn.`,
@@ -52,9 +84,10 @@ export default function DownloadsScreen() {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const res = await downloadService.removeDownload(id);
+                            await downloadService.removeDownload(item.id);
+                            await removeOfflinePoster(item);
                             // Cập nhật giao diện
-                            setDownloads((prev) => prev.filter((d) => d.id !== id));
+                            setDownloads((prev) => prev.filter((d) => d.id !== item.id));
                         } catch (error) {
                             console.error('Lỗi khi xoá offline:', error);
                             Alert.alert('Lỗi', 'Không thể xoá vì quá trình xử lý gặp lỗi.');
@@ -105,13 +138,18 @@ export default function DownloadsScreen() {
 
     const renderItem = ({ item }: { item: OfflineDownload }) => {
         const movieTitle = item?.movie?.title || item?.episode?.title || 'Không rõ tên phim';
-        const coverPic = item?.movie?.posterUrl || item?.movie?.backdropUrl; 
+        const coverPic = item.posterPath || item?.movie?.posterUrl || item?.movie?.backdropUrl;
+        const coverUri = coverPic
+            ? (coverPic.startsWith('http') || coverPic.startsWith('file:') || coverPic.startsWith('content:')
+                ? coverPic
+                : `https://image.tmdb.org/t/p/w200${coverPic}`)
+            : 'https://placehold.co/100x150/1a1a1a/FFF.png';
         const statusText = item.status === 'COMPLETED' ? 'Đã tải xong' : item.status === 'PENDING' ? 'Đang tải về...' : 'Thất bại';
 
         return (
             <View className="flex-row p-3 mb-4 bg-zinc-900 rounded-lg">
                 <Image 
-                    source={{ uri: coverPic ? (coverPic.startsWith('http') ? coverPic : `https://image.tmdb.org/t/p/w200${coverPic}`) : 'https://placehold.co/100x150/1a1a1a/FFF.png' }} 
+                    source={{ uri: coverUri }} 
                     className="w-24 h-32 rounded-md bg-zinc-800"
                     resizeMode="cover"
                 />
@@ -133,7 +171,7 @@ export default function DownloadsScreen() {
                         </TouchableOpacity>
 
                         <TouchableOpacity 
-                            onPress={() => handleDelete(item.id, movieTitle)}
+                            onPress={() => handleDelete(item, movieTitle)}
                             className="p-2 border border-zinc-600 rounded-full"
                         >
                             <Trash2 size={18} color="#ef4444" />

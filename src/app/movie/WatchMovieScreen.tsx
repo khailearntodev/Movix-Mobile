@@ -27,8 +27,10 @@ import * as Application from 'expo-application';
 import { Platform, Alert } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { downloadService } from '../../services/download.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type WatchMovieRouteProp = RouteProp<RootStackParamList, 'WatchMovie'>;
+const OFFLINE_POSTER_STORAGE_KEY = 'offline_download_posters';
 
 export default function WatchMovieScreen() {
     const route = useRoute<WatchMovieRouteProp>();
@@ -265,6 +267,39 @@ export default function WatchMovieScreen() {
     const getImageUrl = (path: string | undefined | null) =>
         path?.startsWith('http') ? path : path ? `https://image.tmdb.org/t/p/w500${path}` : "https://placehold.co/600x400/1a1a1a/FFF.png";
 
+    const saveOfflinePosterPath = async (downloadId: string, posterPath: string) => {
+        try {
+            const raw = await AsyncStorage.getItem(OFFLINE_POSTER_STORAGE_KEY);
+            const posters = raw ? JSON.parse(raw) : {};
+            await AsyncStorage.setItem(
+                OFFLINE_POSTER_STORAGE_KEY,
+                JSON.stringify({ ...posters, [downloadId]: posterPath })
+            );
+        } catch (error) {
+            console.warn('Khong the luu poster offline:', error);
+        }
+    };
+
+    const downloadPosterForOffline = async (downloadId: string, dir: string) => {
+        const posterUrl = getImageUrl(currentEpisode?.videoImageUrl || movie.posterUrl || movie.backdropUrl);
+        if (!posterUrl) return undefined;
+
+        try {
+            const extension = posterUrl.split('.').pop()?.split('?')[0] || 'jpg';
+            const localPosterPath = `${dir}${downloadId}-poster.${extension}`;
+            const result = await FileSystem.downloadAsync(posterUrl, localPosterPath);
+
+            if (result?.uri) {
+                await saveOfflinePosterPath(downloadId, result.uri);
+                return result.uri;
+            }
+        } catch (error) {
+            console.warn('Khong the tai poster offline:', error);
+        }
+
+        return undefined;
+    };
+
     const handleDownload = async () => {
         const benefits = await subscriptionService.getUserSubscriptionBenefits();
         if (!benefits || !benefits.downloads) {
@@ -326,8 +361,10 @@ export default function WatchMovieScreen() {
 
                     if (result && result.uri) {
                         console.log(`[Tải xong] Local File Path vừa tạo: ${result.uri}`);
+                        const posterPath = await downloadPosterForOffline(download.id, dir);
                         await downloadService.completeDownload(download.id, {
-                            filePath: result.uri
+                            filePath: result.uri,
+                            posterPath,
                         });
                         console.log(`Đã báo hoàn tất lên Server ID: ${download.id}`);
                         Alert.alert('Thành công', 'Tải video hoàn tất!');
