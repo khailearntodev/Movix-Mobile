@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Image, ActivityIndicator } fr
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Check, ChevronRight, ChevronLeft } from "lucide-react-native";
+import { Check, ChevronRight, ChevronLeft, LogOut } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 
 import { RootStackParamList } from "../../types/navigation";
@@ -13,7 +13,7 @@ import apiClient from "../../services/api.service";
 
 export default function OnboardingScreen() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -30,7 +30,9 @@ export default function OnboardingScreen() {
     const [explorationLevel, setExplorationLevel] = useState<number>(50);
 
     useEffect(() => {
-        if (user?.preferences?.onboarded_at) {
+        if (!user) {
+            navigation.replace("Welcome");
+        } else if (user?.preferences?.onboarded_at) {
             navigation.replace("Main");
         }
     }, [user, navigation]);
@@ -96,13 +98,19 @@ export default function OnboardingScreen() {
     }
 
     const renderStepIndicators = () => (
-        <View className="flex-row gap-2 justify-center mt-2 mb-6">
-            {[1, 2, 3, 4].map((i) => (
-                <View
-                    key={i}
-                    className={`h-2 rounded-full ${i === step ? "w-8 bg-red-600" : i < step ? "w-4 bg-red-600/50" : "w-4 bg-zinc-800"}`}
-                />
-            ))}
+        <View className="flex-row items-center justify-between mt-2 mb-6 w-full">
+            <View className="w-8" /> 
+            <View className="flex-row gap-2 justify-center">
+                {[1, 2, 3, 4].map((i) => (
+                    <View
+                        key={i}
+                        className={`h-2 rounded-full ${i === step ? "w-8 bg-red-600" : i < step ? "w-4 bg-red-600/50" : "w-4 bg-zinc-800"}`}
+                    />
+                ))}
+            </View>
+            <TouchableOpacity onPress={signOut} className="w-8 items-center justify-center">
+                <LogOut size={20} color="#71717a" />
+            </TouchableOpacity>
         </View>
     );
 
