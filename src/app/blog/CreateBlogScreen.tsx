@@ -1,21 +1,45 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Image, Alert, KeyboardAvoidingView, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, TextInput, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Image, Alert, KeyboardAvoidingView, ScrollView, DeviceEventEmitter } from 'react-native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { X, Image as ImageIcon, Search, Film } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { blogService } from '../../services/blog.service';
 import { search as searchMovies } from '../../services/movie.service';
 import type { Movie } from '../../types/movie';
+import type { RootStackParamList } from '../../types/navigation';
+
+type CreateBlogRouteProp = RouteProp<RootStackParamList, 'CreateBlog'>;
 
 export default function CreateBlogScreen() {
   const navigation = useNavigation<any>();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const route = useRoute<CreateBlogRouteProp>();
+  const editingPost = route.params?.post;
+  const isEditing = !!editingPost?.id;
+  const [title, setTitle] = useState(editingPost?.title || '');
+  const [content, setContent] = useState(editingPost?.content || '');
   const [loading, setLoading] = useState(false);
-  const [imageUri, setImageUri] = useState<string | null>(null);
-  const [movieQuery, setMovieQuery] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(editingPost?.imageUrl || null);
+  const [isImageChanged, setIsImageChanged] = useState(false);
+  const [movieQuery, setMovieQuery] = useState(editingPost?.movie?.title || '');
   const [movieResults, setMovieResults] = useState<Movie[]>([]);
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(() => (
+    editingPost?.movie
+      ? {
+          id: editingPost.movie.id,
+          slug: '',
+          title: editingPost.movie.title,
+          subTitle: '',
+          description: '',
+          posterUrl: editingPost.movie.poster_url || '',
+          backdropUrl: '',
+          trailerUrl: null,
+          videoUrl: null,
+          tags: [],
+          type: editingPost.movie.media_type === 'TV' ? 'TV' : 'MOVIE',
+          releaseYear: editingPost.movie.release_date?.substring(0, 4) || 'N/A',
+        }
+      : null
+  ));
   const [isSearchingMovies, setIsSearchingMovies] = useState(false);
 
   useEffect(() => {
@@ -65,6 +89,7 @@ export default function CreateBlogScreen() {
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setImageUri(result.assets[0].uri);
+      setIsImageChanged(true);
     }
   };
 
@@ -82,9 +107,11 @@ export default function CreateBlogScreen() {
 
       if (selectedMovie) {
         formData.append('movieId', selectedMovie.id);
+      } else if (isEditing) {
+        formData.append('movieId', 'null');
       }
       
-      if (imageUri) {
+      if (imageUri && isImageChanged) {
         const filename = imageUri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename || '');
         const type = match ? `image/${match[1]}` : `image`;
@@ -94,9 +121,16 @@ export default function CreateBlogScreen() {
           name: filename,
           type,
         } as any);
+      } else if (!imageUri && isEditing) {
+        formData.append('thumbnail', '');
       }
 
-      await blogService.createBlogPost(formData);
+      if (isEditing && editingPost?.id) {
+        await blogService.updateBlogPost(editingPost.id, formData);
+      } else {
+        await blogService.createBlogPost(formData);
+      }
+      DeviceEventEmitter.emit('blog_post_saved');
       navigation.goBack();
     } catch (error) {
       console.error('Error creating post:', error);
@@ -116,7 +150,7 @@ export default function CreateBlogScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-2 -ml-2 rounded-full bg-zinc-900/50">
           <X color="#fff" size={24} />
         </TouchableOpacity>
-        <Text className="text-white text-lg font-bold">Tạo bài viết</Text>
+        <Text className="text-white text-lg font-bold">{isEditing ? 'Chỉnh sửa bài viết' : 'Tạo bài viết'}</Text>
         <TouchableOpacity 
           onPress={handlePost} 
           disabled={loading || !content.trim()}
@@ -125,7 +159,9 @@ export default function CreateBlogScreen() {
           {loading ? (
              <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text className={`font-semibold ${content.trim() ? "text-white" : "text-zinc-500"}`}>Đăng</Text>
+            <Text className={`font-semibold ${content.trim() ? "text-white" : "text-zinc-500"}`}>
+              {isEditing ? 'Lưu' : 'Đăng'}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -255,7 +291,10 @@ export default function CreateBlogScreen() {
             />
             <TouchableOpacity 
               className="absolute top-2 right-2 bg-black/60 p-1.5 rounded-full"
-              onPress={() => setImageUri(null)}
+              onPress={() => {
+                setImageUri(null);
+                setIsImageChanged(true);
+              }}
             >
               <X color="#fff" size={20} />
             </TouchableOpacity>

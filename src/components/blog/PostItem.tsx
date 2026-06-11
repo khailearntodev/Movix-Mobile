@@ -10,9 +10,10 @@ interface PostItemProps {
   onLike: () => void;
   onBookmark: () => void;
   onShare?: () => void;
+  onOpenActions?: () => void;
 }
 
-export const PostItem = ({ item, onPress, onLike, onBookmark, onShare }: PostItemProps) => {
+export const PostItem = ({ item, onPress, onLike, onBookmark, onShare, onOpenActions }: PostItemProps) => {
   const { user } = useAuth();
   const { isFollowing, isLoading: isFollowLoading, toggleFollow } = useFollow(item.author?.id || "");
   const isOwnPost = user?.id === item.author?.id;
@@ -56,7 +57,7 @@ export const PostItem = ({ item, onPress, onLike, onBookmark, onShare }: PostIte
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity className="p-2 -mr-2">
+          <TouchableOpacity className="p-2 -mr-2" onPress={onOpenActions}>
             <MoreHorizontal color="#A4A4AD" size={22} />
           </TouchableOpacity>
         </View>
