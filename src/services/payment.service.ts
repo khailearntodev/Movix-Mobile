@@ -207,13 +207,14 @@ export const pollPaymentStatus = async (
 
 export const initiateCheckoutWithRetry = async (
   planId: string,
+  paymentMethod: string = 'PAYOS',
   maxRetries: number = 3,
 ): Promise<CheckoutResponse['data']> => {
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await createCheckoutSession(planId, 'PAYOS');
+      return await createCheckoutSession(planId, paymentMethod);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 

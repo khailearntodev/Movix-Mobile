@@ -26,6 +26,7 @@ import EditProfileScreen from "./src/app/account/EditProfileScreen";
 import NotificationsScreen from "./src/app/account/NotificationsScreen";
 import SubscriptionScreen from "./src/app/account/SubscriptionScreen";
 import TransactionsScreen from "./src/app/account/TransactionsScreen";
+import PaymentWebViewScreen from "./src/app/account/PaymentWebViewScreen";
 import { RootStackParamList } from "./src/types/navigation";
 
 import WatchMovieScreen from "./src/app/movie/WatchMovieScreen";
@@ -95,6 +96,11 @@ export default function App() {
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Subscription" component={SubscriptionScreen} />
+            <Stack.Screen
+              name="PaymentWebView"
+              component={PaymentWebViewScreen}
+              options={{ animation: "slide_from_bottom" }}
+            />
             <Stack.Screen name="Transactions" component={TransactionsScreen} />
 
             <Stack.Screen

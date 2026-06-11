@@ -1,16 +1,42 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
-import { Check, Crown, ChevronLeft } from 'lucide-react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { Check, Crown, ChevronLeft, Landmark, QrCode } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { subscriptionService } from '@/services/subscription.service';
 import { SubscriptionPlan, UserSubscription } from '@/types/subscription';
 import { initiateCheckoutWithRetry } from '@/services/payment.service';
+import { RootStackParamList } from '@/types/navigation';
+
+type PaymentMethod = 'PAYOS' | 'VNPAY';
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+const PAYMENT_METHODS: Array<{
+    value: PaymentMethod;
+    label: string;
+    description: string;
+    icon: React.ComponentType<{ size?: number; color?: string }>;
+}> = [
+    {
+        value: 'PAYOS',
+        label: 'PayOS',
+        description: 'QR ngân hàng',
+        icon: QrCode,
+    },
+    {
+        value: 'VNPAY',
+        label: 'VNPay',
+        description: 'Thẻ ATM, QR, ví điện tử',
+        icon: Landmark,
+    },
+];
 
 const SubscriptionScreen = () => {
-    const navigation = useNavigation();
+    const navigation = useNavigation<NavigationProp>();
     const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null);
     const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('PAYOS');
 
     useFocusEffect(
         useCallback(() => {
@@ -49,14 +75,13 @@ const SubscriptionScreen = () => {
     const handleUpgrade = async (planId: string) => {
         try {
             setIsLoading(true);
-            const checkoutData = await initiateCheckoutWithRetry(planId);
+            const checkoutData = await initiateCheckoutWithRetry(planId, paymentMethod);
             if (checkoutData?.paymentData?.paymentUrl) {
-                const supported = await Linking.canOpenURL(checkoutData.paymentData.paymentUrl);
-                if (supported) {
-                    await Linking.openURL(checkoutData.paymentData.paymentUrl);
-                } else {
-                    Alert.alert('Lỗi', 'Không thể mở trang thanh toán.');
-                }
+                navigation.navigate('PaymentWebView', {
+                    paymentUrl: checkoutData.paymentData.paymentUrl,
+                    paymentMethod,
+                    orderCode: checkoutData.paymentData.orderCode,
+                });
             }
         } catch (error: any) {
             Alert.alert('Lỗi', error.message || 'Không thể tạo phiên thanh toán.');
@@ -92,6 +117,45 @@ const SubscriptionScreen = () => {
                     <Text className="text-zinc-400 text-center px-8">
                         Nâng cấp lên Premium để trải nghiệm Movix tốt nhất
                     </Text>
+                </View>
+
+                <View className="mb-6">
+                    <Text className="text-zinc-300 font-bold uppercase text-xs tracking-wider mb-3">
+                        Phương thức thanh toán
+                    </Text>
+                    <View className="flex-row gap-3">
+                        {PAYMENT_METHODS.map((method) => {
+                            const Icon = method.icon;
+                            const isSelected = paymentMethod === method.value;
+
+                            return (
+                                <TouchableOpacity
+                                    key={method.value}
+                                    activeOpacity={0.85}
+                                    onPress={() => setPaymentMethod(method.value)}
+                                    className={`flex-1 rounded-2xl border p-4 ${
+                                        isSelected
+                                            ? 'border-yellow-500 bg-yellow-500/10'
+                                            : 'border-zinc-800 bg-zinc-900'
+                                    }`}
+                                >
+                                    <View className="flex-row items-center gap-3">
+                                        <View
+                                            className={`h-10 w-10 rounded-xl items-center justify-center ${
+                                                isSelected ? 'bg-yellow-500' : 'bg-zinc-800'
+                                            }`}
+                                        >
+                                            <Icon size={20} color={isSelected ? '#000' : '#d4d4d8'} />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Text className="text-white font-bold">{method.label}</Text>
+                                            <Text className="text-zinc-400 text-xs mt-1">{method.description}</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
                 </View>
 
                 {plans.map((plan) => {
