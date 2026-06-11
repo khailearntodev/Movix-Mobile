@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, SafeAreaView, Platform, KeyboardAvoidingView, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, SafeAreaView, Platform, KeyboardAvoidingView, Linking, Modal, Alert, Clipboard, TextInput } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
-import { ArrowLeft, MessageSquare, ThumbsUp, Bookmark, Eye, Share2, MoreHorizontal } from 'lucide-react-native';
+import { ArrowLeft, MessageSquare, ThumbsUp, Bookmark, Eye, Share2, MoreHorizontal, AlertTriangle, Copy, Edit, Trash2, X } from 'lucide-react-native';
 import { blogService } from '../../services/blog.service';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -17,6 +17,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { DeviceEventEmitter } from 'react-native';
 import { getBlogEngagement } from './blogEngagement';
 import { FE_URL } from '../../constants/config';
+import { reportService } from '../../services/report.service';
+import { ReportTargetType } from '../../types/report';
 
 type BlogDetailRouteProp = RouteProp<RootStackParamList, 'BlogDetail'>;
 
@@ -208,6 +210,10 @@ export default function BlogDetailScreen() {
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isShareVisible, setShareVisible] = useState(false);
+  const [isActionVisible, setActionVisible] = useState(false);
+  const [isReportVisible, setReportVisible] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
 
   const { id, slug } = route.params;
 
@@ -426,6 +432,98 @@ export default function BlogDetailScreen() {
     }
   };
 
+  const getEditMovie = () => {
+    if (!post?.movie) return null;
+
+    return {
+      id: post.movie.id,
+      title: post.movie.title,
+      poster_url: post.movie.poster_url || null,
+      media_type: post.movie.media_type || post.movie.type,
+      release_date: post.movie.release_date || null,
+    };
+  };
+
+  const handleCopyLink = () => {
+    Clipboard.setString(`${FE_URL}/blog/${post.slug || slug}`);
+    setActionVisible(false);
+    Alert.alert('Thành công', 'Đã sao chép liên kết bài viết');
+  };
+
+  const handleEditPost = () => {
+    setActionVisible(false);
+    navigation.navigate('CreateBlog', {
+      post: {
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        imageUrl: post.thumbnail || (Array.isArray(post.images) && post.images.length > 0 ? post.images[0] : undefined),
+        movie: getEditMovie(),
+      },
+    });
+  };
+
+  const handleDeletePost = () => {
+    setActionVisible(false);
+    Alert.alert(
+      'Xóa bài viết',
+      'Bạn có chắc chắn muốn xóa bài viết này không?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await blogService.deleteBlogPost(post.id);
+              DeviceEventEmitter.emit('blog_post_deleted', { postId: post.id });
+              Alert.alert('Thành công', 'Đã xóa bài viết');
+              navigation.goBack();
+            } catch (error: any) {
+              Alert.alert('Lỗi', error.response?.data?.message || 'Không thể xóa bài viết');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const openReportModal = () => {
+    if (!user) {
+      Alert.alert('Thông báo', 'Vui lòng đăng nhập để báo cáo bài viết');
+      setActionVisible(false);
+      return;
+    }
+
+    setActionVisible(false);
+    setReportVisible(true);
+  };
+
+  const handleSubmitReport = async () => {
+    if (!post) return;
+
+    if (!reportReason.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập lý do báo cáo');
+      return;
+    }
+
+    try {
+      setIsReporting(true);
+      await reportService.createReport({
+        targetType: ReportTargetType.BLOG,
+        targetId: post.id,
+        reason: reportReason.trim(),
+      });
+      Alert.alert('Thành công', 'Báo cáo của bạn đã được gửi');
+      setReportVisible(false);
+      setReportReason('');
+    } catch (error: any) {
+      Alert.alert('Lỗi', error.response?.data?.message || 'Không thể gửi báo cáo lúc này');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-black justify-center items-center">
@@ -463,7 +561,7 @@ export default function BlogDetailScreen() {
         >
           <ArrowLeft color="#fff" size={24} />
         </TouchableOpacity>
-        <TouchableOpacity className="p-2 -mr-2">
+        <TouchableOpacity className="p-2 -mr-2" onPress={() => setActionVisible(true)}>
           <MoreHorizontal color="#fff" size={24} />
         </TouchableOpacity>
       </View>
@@ -613,6 +711,118 @@ export default function BlogDetailScreen() {
         title={post.title || 'Bài viết Movix'}
         url={blogShareUrl}
       />
+
+      <Modal
+        visible={isActionVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActionVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          className="flex-1 justify-end bg-black/70"
+          onPress={() => setActionVisible(false)}
+        >
+          <View className="bg-zinc-900 rounded-t-3xl p-5 pb-8 border-t border-zinc-800">
+            <View className="w-12 h-1 bg-zinc-700 rounded-full self-center mb-5" />
+            <View className="flex-row items-center justify-between mb-4">
+              <Text className="text-white text-lg font-bold" numberOfLines={1}>
+                Tùy chọn bài viết
+              </Text>
+              <TouchableOpacity onPress={() => setActionVisible(false)} className="p-2 bg-zinc-800 rounded-full">
+                <X color="#fff" size={18} />
+              </TouchableOpacity>
+            </View>
+
+            {user?.id === authorId ? (
+              <>
+                <TouchableOpacity
+                  className="flex-row items-center py-4 border-b border-zinc-800"
+                  onPress={handleEditPost}
+                >
+                  <Edit color="#e4e4e7" size={20} />
+                  <Text className="text-zinc-100 text-base font-medium ml-3">Chỉnh sửa</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="flex-row items-center py-4 border-b border-zinc-800"
+                  onPress={handleDeletePost}
+                >
+                  <Trash2 color="#ef4444" size={20} />
+                  <Text className="text-red-500 text-base font-medium ml-3">Xóa bài viết</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                className="flex-row items-center py-4 border-b border-zinc-800"
+                onPress={openReportModal}
+              >
+                <AlertTriangle color="#ef4444" size={20} />
+                <Text className="text-red-500 text-base font-medium ml-3">Báo cáo bài viết</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              className="flex-row items-center py-4"
+              onPress={handleCopyLink}
+            >
+              <Copy color="#e4e4e7" size={20} />
+              <Text className="text-zinc-100 text-base font-medium ml-3">Sao chép liên kết</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <Modal
+        visible={isReportVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setReportVisible(false);
+          setReportReason('');
+        }}
+      >
+        <View className="flex-1 justify-center bg-black/80 px-5">
+          <View className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+            <Text className="text-white text-xl font-bold mb-2">Báo cáo vi phạm</Text>
+            <Text className="text-zinc-400 text-sm leading-5 mb-4">
+              Hãy cho chúng tôi biết lý do bạn muốn báo cáo nội dung này. Quản trị viên sẽ xem xét và xử lý.
+            </Text>
+            <TextInput
+              placeholder="Nhập lý do báo cáo..."
+              placeholderTextColor="#71717a"
+              className="min-h-[110px] bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-white mb-4"
+              multiline
+              textAlignVertical="top"
+              value={reportReason}
+              onChangeText={setReportReason}
+              editable={!isReporting}
+            />
+            <View className="flex-row justify-end">
+              <TouchableOpacity
+                className="px-4 py-3 mr-2"
+                disabled={isReporting}
+                onPress={() => {
+                  setReportVisible(false);
+                  setReportReason('');
+                }}
+              >
+                <Text className="text-zinc-300 font-semibold">Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-red-600 px-5 py-3 rounded-xl min-w-[110px] items-center"
+                disabled={isReporting}
+                onPress={handleSubmitReport}
+              >
+                {isReporting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text className="text-white font-bold">Gửi báo cáo</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

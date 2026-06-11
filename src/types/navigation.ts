@@ -33,6 +33,20 @@ export type RootStackParamList = {
   People: undefined;
   PersonDetail: { personId: string };
   BlogDetail: { id: string; slug: string };
-  CreateBlog: undefined;
+  CreateBlog: {
+    post?: {
+      id: string;
+      title?: string;
+      content?: string;
+      imageUrl?: string;
+      movie?: {
+        id: string;
+        title: string;
+        poster_url?: string | null;
+        media_type?: "MOVIE" | "TV";
+        release_date?: string | null;
+      } | null;
+    };
+  } | undefined;
   BlogSearch: undefined;
 };
