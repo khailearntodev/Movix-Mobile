@@ -3,6 +3,7 @@ import { User, LoginPayload, RegisterPayload } from '@/types/auth';
 import * as authService from '@/services/auth.service';
 import { getAccessToken, saveToken, clearToken } from '@/utils/storage';
 import { setLogoutCallback } from '@/services/api.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
     user: User | null;
@@ -24,6 +25,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setIsLoading(true);
             await clearToken();
             setUser(null);
+
+            const keys = await AsyncStorage.getAllKeys();
+            const wpKeys = keys.filter(key => key.startsWith('wp_join_code_'));
+            if (wpKeys.length > 0) {
+                await AsyncStorage.multiRemove(wpKeys);
+            }
         } catch (error) {
             console.error('Lỗi khi đăng xuất:', error);
         } finally {
