@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 const API_URL_ENV = process.env.EXPO_PUBLIC_API_URL;
 const SOCKET_URL_ENV = process.env.EXPO_PUBLIC_SOCKET_URL;
+const FE_URL_ENV = process.env.EXPO_PUBLIC_FE_URL;
 
 const DEFAULT_HOST = Platform.select({
     android: 'http://10.0.2.2:5000',
@@ -11,3 +12,4 @@ const DEFAULT_HOST = Platform.select({
 
 export const API_URL = API_URL_ENV || `${DEFAULT_HOST}/api`;
 export const SOCKET_URL = SOCKET_URL_ENV || DEFAULT_HOST;
+export const FE_URL = (FE_URL_ENV || 'https://movix-fe.vercel.app').replace(/\/$/, '');
