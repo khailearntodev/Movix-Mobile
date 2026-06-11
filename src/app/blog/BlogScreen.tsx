@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, RefreshControl, ActivityIndicator, SafeAreaView, Platform, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MessageSquare, ThumbsUp, Bookmark, MoreHorizontal, Eye, Edit, Search, Filter, Hash } from 'lucide-react-native';
@@ -57,8 +57,6 @@ export default function BlogScreen() {
       
       const params: any = { page: pageNumber, limit: 10 };
       if (searchQuery) params.search = searchQuery;
-      // You can add logic for 'reviews' or 'top' if API supports it
-
       const response = await blogService.getAllBlogs(params);
       
       if (response && response.data) {
@@ -158,6 +156,26 @@ export default function BlogScreen() {
       setPage(nextPage);
       fetchBlogs(nextPage);
     }
+  };
+
+  const displayedPosts = useMemo(() => {
+    const sortedPosts = [...posts];
+
+    if (activeFilter === 'top') {
+      return sortedPosts.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+    }
+
+    if (activeFilter === 'reviews') {
+      return sortedPosts.filter((post) => post.movie != null);
+    }
+
+    return sortedPosts;
+  }, [activeFilter, posts]);
+
+  const handleFilterChange = (filter: typeof activeFilter) => {
+    if (filter === activeFilter) return;
+    setPage(1);
+    setActiveFilter(filter);
   };
 
   const handleLikePost = async (postId: string, currentLiked: boolean) => {
@@ -302,7 +320,7 @@ export default function BlogScreen() {
 
       <View className="flex-row px-4 py-2">
         <TouchableOpacity
-          onPress={() => setActiveFilter('newest')}
+          onPress={() => handleFilterChange('newest')}
           className={`mr-3 px-5 py-2.5 rounded-full ${
             activeFilter === 'newest' ? 'bg-[#EF2B2D]' : 'bg-[#24242A]'
           }`}
@@ -315,7 +333,7 @@ export default function BlogScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity
-          onPress={() => setActiveFilter('reviews')}
+          onPress={() => handleFilterChange('reviews')}
           className={`mr-3 px-5 py-2.5 rounded-full ${
             activeFilter === 'reviews' ? 'bg-[#EF2B2D]' : 'bg-[#24242A]'
           }`}
@@ -328,7 +346,7 @@ export default function BlogScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity
-          onPress={() => setActiveFilter('top')}
+          onPress={() => handleFilterChange('top')}
           className={`px-5 py-2.5 rounded-full ${
             activeFilter === 'top' ? 'bg-[#EF2B2D]' : 'bg-[#24242A]'
           }`}
@@ -358,7 +376,7 @@ export default function BlogScreen() {
 
       {/* Main List */}
       <FlatList
-        data={posts}
+        data={displayedPosts}
         renderItem={renderPost}
         keyExtractor={(item, index) => item.id || `post-${index}`}
         ListHeaderComponent={renderHeader}

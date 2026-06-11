@@ -24,6 +24,7 @@ export interface DownloadRequestResponse {
 
 export interface CompleteDownloadPayload {
   filePath?: string;
+  posterPath?: string;
 }
 
 // Model download trả về cho list
@@ -33,6 +34,7 @@ export interface OfflineDownload {
   episodeId: string;
   deviceId: string;
   filePath?: string;
+  posterPath?: string;
   // Các field model đính kèm từ backend
   episode?: any; // Bạn có thể map với interface Episode thực tế
   movie?: any;   // Bạn có thể map với interface Movie thực tế

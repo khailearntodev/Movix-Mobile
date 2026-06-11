@@ -72,18 +72,18 @@ export interface UserTransactionsResult {
 }
 
 export interface PaymentData {
-  bin: string;
-  accountNumber: string;
-  accountName: string;
+  bin?: string;
+  accountNumber?: string;
+  accountName?: string;
   amount: number;
   description: string;
-  orderCode: number;
-  currency: string;
+  orderCode: number | string;
+  currency?: string;
   paymentUrl?: string; 
   checkoutUrl?: string;
   payUrl?: string;
   link?: string;
-  signature: string;
+  signature?: string;
 }
 
 export interface CheckoutResponse {
