@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, SafeAreaView, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, SafeAreaView, Platform, KeyboardAvoidingView, Linking } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ArrowLeft, MessageSquare, ThumbsUp, Bookmark, Eye, Share2, MoreHorizontal } from 'lucide-react-native';
 import { blogService } from '../../services/blog.service';
@@ -10,19 +10,204 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CommentList } from "../../components/movie/comments/CommentList";
 import { CommentInput } from "../../components/movie/comments/CommentInput";
 import { ToastMessage, ToastType } from "../../components/common/ToastMessage";
+import { ShareModal } from "../../components/common/ShareModal";
 import { useComments } from "../../hooks/useComments";
 import { useFollow } from "../../hooks/useFollow";
 import { useAuth } from "../../contexts/AuthContext";
 import { DeviceEventEmitter } from 'react-native';
 import { getBlogEngagement } from './blogEngagement';
+import { FE_URL } from '../../constants/config';
 
 type BlogDetailRouteProp = RouteProp<RootStackParamList, 'BlogDetail'>;
+
+type InlineMarkdownState = {
+  bold?: boolean;
+  italic?: boolean;
+  link?: string;
+};
+
+const normalizeUrl = (url: string) => {
+  const trimmedUrl = url.trim();
+  if (/^https?:\/\//i.test(trimmedUrl)) return trimmedUrl;
+  return `https://${trimmedUrl}`;
+};
+
+const openMarkdownLink = async (url: string) => {
+  try {
+    await Linking.openURL(normalizeUrl(url));
+  } catch (error) {
+    console.error('Error opening blog markdown link:', error);
+  }
+};
+
+const renderInlineMarkdown = (
+  source: string,
+  keyPrefix: string,
+  state: InlineMarkdownState = {}
+): React.ReactNode[] => {
+  const nodes: React.ReactNode[] = [];
+  let index = 0;
+
+  const textClassName = [
+    state.bold ? 'font-bold text-white' : '',
+    state.italic ? 'italic' : '',
+    state.link ? 'text-red-400 underline' : '',
+  ].filter(Boolean).join(' ');
+
+  const pushText = (value: string, key: string) => {
+    if (!value) return;
+    nodes.push(
+      <Text
+        key={key}
+        className={textClassName}
+        onPress={state.link ? () => openMarkdownLink(state.link!) : undefined}
+      >
+        {value}
+      </Text>
+    );
+  };
+
+  while (index < source.length) {
+    if (source.startsWith('**', index)) {
+      const closeIndex = source.indexOf('**', index + 2);
+      if (closeIndex !== -1) {
+        nodes.push(
+          ...renderInlineMarkdown(
+            source.slice(index + 2, closeIndex),
+            `${keyPrefix}-bold-${index}`,
+            { ...state, bold: true }
+          )
+        );
+        index = closeIndex + 2;
+        continue;
+      }
+    }
+
+    if (source[index] === '*' && source[index + 1] !== '*') {
+      const closeIndex = source.indexOf('*', index + 1);
+      if (closeIndex !== -1) {
+        nodes.push(
+          ...renderInlineMarkdown(
+            source.slice(index + 1, closeIndex),
+            `${keyPrefix}-italic-${index}`,
+            { ...state, italic: true }
+          )
+        );
+        index = closeIndex + 1;
+        continue;
+      }
+    }
+
+    if (source[index] === '[') {
+      const closeLabelIndex = source.indexOf('](', index);
+      const closeUrlIndex = closeLabelIndex !== -1 ? source.indexOf(')', closeLabelIndex + 2) : -1;
+      if (closeLabelIndex !== -1 && closeUrlIndex !== -1) {
+        const label = source.slice(index + 1, closeLabelIndex);
+        const url = source.slice(closeLabelIndex + 2, closeUrlIndex);
+        nodes.push(
+          ...renderInlineMarkdown(
+            label,
+            `${keyPrefix}-link-${index}`,
+            { ...state, link: url }
+          )
+        );
+        index = closeUrlIndex + 1;
+        continue;
+      }
+    }
+
+    const nextBoldIndex = source.indexOf('**', index + 1);
+    const nextItalicIndex = source.indexOf('*', index + 1);
+    const nextLinkIndex = source.indexOf('[', index + 1);
+    const nextTokenIndex = [nextBoldIndex, nextItalicIndex, nextLinkIndex]
+      .filter((value) => value !== -1)
+      .sort((a, b) => a - b)[0] ?? source.length;
+
+    pushText(source.slice(index, nextTokenIndex), `${keyPrefix}-text-${index}`);
+    index = nextTokenIndex;
+  }
+
+  return nodes;
+};
+
+const MarkdownText = ({ content }: { content: string }) => {
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+
+  return (
+    <View className="mb-6">
+      {lines.map((line, index) => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) {
+          return <View key={`md-space-${index}`} className="h-3" />;
+        }
+
+        const headingMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          const headingClassName = level === 1
+            ? 'text-white text-2xl font-bold leading-8 mt-2 mb-3'
+            : level === 2
+              ? 'text-white text-xl font-bold leading-7 mt-2 mb-3'
+              : 'text-white text-lg font-bold leading-7 mt-1 mb-2';
+
+          return (
+            <Text key={`md-heading-${index}`} className={headingClassName}>
+              {renderInlineMarkdown(headingMatch[2], `md-heading-${index}`)}
+            </Text>
+          );
+        }
+
+        const quoteMatch = trimmedLine.match(/^>\s?(.*)$/);
+        if (quoteMatch) {
+          return (
+            <View key={`md-quote-${index}`} className="border-l-4 border-zinc-700 pl-3 my-2">
+              <Text className="text-zinc-300 text-base italic leading-relaxed">
+                {renderInlineMarkdown(quoteMatch[1], `md-quote-${index}`, { italic: true })}
+              </Text>
+            </View>
+          );
+        }
+
+        const bulletMatch = trimmedLine.match(/^[-*]\s+(.+)$/);
+        if (bulletMatch) {
+          return (
+            <View key={`md-bullet-${index}`} className="flex-row mb-2 pr-2">
+              <Text className="text-zinc-200 text-base leading-relaxed mr-2">•</Text>
+              <Text className="text-zinc-200 text-base leading-relaxed flex-1">
+                {renderInlineMarkdown(bulletMatch[1], `md-bullet-${index}`)}
+              </Text>
+            </View>
+          );
+        }
+
+        const orderedMatch = trimmedLine.match(/^(\d+)\.\s+(.+)$/);
+        if (orderedMatch) {
+          return (
+            <View key={`md-ordered-${index}`} className="flex-row mb-2 pr-2">
+              <Text className="text-zinc-200 text-base leading-relaxed mr-2">{orderedMatch[1]}.</Text>
+              <Text className="text-zinc-200 text-base leading-relaxed flex-1">
+                {renderInlineMarkdown(orderedMatch[2], `md-ordered-${index}`)}
+              </Text>
+            </View>
+          );
+        }
+
+        return (
+          <Text key={`md-line-${index}`} className="text-zinc-200 text-base leading-relaxed mb-3">
+            {renderInlineMarkdown(trimmedLine, `md-line-${index}`)}
+          </Text>
+        );
+      })}
+    </View>
+  );
+};
 
 export default function BlogDetailScreen() {
   const route = useRoute<BlogDetailRouteProp>();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [post, setPost] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isShareVisible, setShareVisible] = useState(false);
 
   const { id, slug } = route.params;
 
@@ -266,6 +451,7 @@ export default function BlogDetailScreen() {
   const timeAgo = post.created_at ? formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: vi }) : '';
   const authorName = post.user?.display_name || post.user?.username || 'Unknown User';
   const authorAvatar = post.user?.avatar_url || 'https://via.placeholder.com/150';
+  const blogShareUrl = `${FE_URL}/blog/${post.slug || slug}`;
 
   return (
     <SafeAreaView className="flex-1 bg-black" style={{ paddingTop: Platform.OS === 'android' ? 24 : 0 }}>
@@ -358,9 +544,7 @@ export default function BlogDetailScreen() {
             )}
 
             {/* Content */}
-            <Text className="text-zinc-200 text-base leading-relaxed mb-6">
-              {post.content}
-            </Text>
+            <MarkdownText content={post.content || ''} />
 
             <View className="flex-row items-center justify-between border-t border-zinc-900 mt-2 py-4 mb-6">
               <View className="flex-row items-center flex-1">
@@ -388,7 +572,7 @@ export default function BlogDetailScreen() {
                   <Bookmark color={post.is_bookmarked ? "#dc2626" : "#a1a1aa"} size={24} />
                 </TouchableOpacity>
                 
-                <TouchableOpacity className="p-3">
+                <TouchableOpacity className="p-3" onPress={() => setShareVisible(true)}>
                   <Share2 color="#a1a1aa" size={24} />
                 </TouchableOpacity>
               </View>
@@ -421,6 +605,13 @@ export default function BlogDetailScreen() {
         message={toastMessage}
         type={toastType}
         onHide={() => setToastVisible(false)}
+      />
+
+      <ShareModal
+        visible={isShareVisible}
+        onClose={() => setShareVisible(false)}
+        title={post.title || 'Bài viết Movix'}
+        url={blogShareUrl}
       />
     </SafeAreaView>
   );

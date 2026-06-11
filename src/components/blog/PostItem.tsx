@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
-import { MessageSquare, ThumbsUp, Bookmark, MoreHorizontal } from 'lucide-react-native';
+import { MessageSquare, ThumbsUp, Bookmark, MoreHorizontal, Share2 } from 'lucide-react-native';
 import { useFollow } from '../../hooks/useFollow';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -9,9 +9,10 @@ interface PostItemProps {
   onPress: () => void;
   onLike: () => void;
   onBookmark: () => void;
+  onShare?: () => void;
 }
 
-export const PostItem = ({ item, onPress, onLike, onBookmark }: PostItemProps) => {
+export const PostItem = ({ item, onPress, onLike, onBookmark, onShare }: PostItemProps) => {
   const { user } = useAuth();
   const { isFollowing, isLoading: isFollowLoading, toggleFollow } = useFollow(item.author?.id || "");
   const isOwnPost = user?.id === item.author?.id;
@@ -90,7 +91,7 @@ export const PostItem = ({ item, onPress, onLike, onBookmark }: PostItemProps) =
           )}
           <View className="ml-3 flex-1">
             <Text className="text-[#9A9AA3] text-[12.5px] mb-0.5">Đang nhận xét về:</Text>
-            <Text className="text-white text-[15px] font-semibold" numberOfLines={1}>{item.title}</Text>
+            <Text className="text-white text-[15px] font-semibold" numberOfLines={1}>{item.movie.title}</Text>
           </View>
         </View>
       )}
@@ -115,6 +116,12 @@ export const PostItem = ({ item, onPress, onLike, onBookmark }: PostItemProps) =
         
         <View className="flex-row items-center">
           <Text className="text-[#A4A4AD] text-[13.5px] mr-4">{item?.viewCount || 0} lượt xem</Text>
+          <TouchableOpacity
+            className="py-2 px-2 mr-2"
+            onPress={onShare}
+          >
+            <Share2 color="#A4A4AD" size={22} />
+          </TouchableOpacity>
           <TouchableOpacity 
             className="py-2 pl-2"
             onPress={onBookmark}

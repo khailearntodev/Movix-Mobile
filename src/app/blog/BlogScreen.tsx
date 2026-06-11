@@ -11,6 +11,8 @@ import { usePullToRefreshHaptics } from '../../hooks/usePullToRefreshHaptics';
 import { PostItem } from '../../components/blog/PostItem';
 import { DeviceEventEmitter } from 'react-native';
 import { getBlogEngagement } from './blogEngagement';
+import { ShareModal } from '../../components/common/ShareModal';
+import { FE_URL } from '../../constants/config';
 
 interface Post {
   id: string;
@@ -50,6 +52,7 @@ export default function BlogScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'newest' | 'reviews' | 'top'>('newest');
+  const [sharingPost, setSharingPost] = useState<Post | null>(null);
 
   const fetchBlogs = async (pageNumber = 1, shouldRefresh = false) => {
     try {
@@ -290,12 +293,15 @@ export default function BlogScreen() {
     navigation.navigate('BlogDetail', { slug: post.slug, id: post.id });
   };
 
+  const getBlogShareUrl = (post: Post) => `${FE_URL}/blog/${post.slug}`;
+
   const renderPost = ({ item }: { item: Post }) => (
     <PostItem 
       item={item}
       onPress={() => handlePostPress(item)}
       onLike={() => handleLikePost(item.id, !!item.likedByCurrentUser)}
       onBookmark={() => handleBookmarkPost(item.id, !!item.bookmarkedByCurrentUser)}
+      onShare={() => setSharingPost(item)}
     />
   );
 
@@ -409,6 +415,13 @@ export default function BlogScreen() {
             </View>
           ) : null
         }
+      />
+
+      <ShareModal
+        visible={!!sharingPost}
+        onClose={() => setSharingPost(null)}
+        title={sharingPost?.title || 'Bài viết Movix'}
+        url={sharingPost ? getBlogShareUrl(sharingPost) : undefined}
       />
     </SafeAreaView>
   );
